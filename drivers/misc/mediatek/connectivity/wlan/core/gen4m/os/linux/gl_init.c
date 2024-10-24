@@ -1482,6 +1482,8 @@ static const struct wiphy_wowlan_support mtk_wlan_wowlan_support = {
  *******************************************************************************
  */
 
+static void wlanRemove(void);
+
 /*******************************************************************************
  *                              F U N C T I O N S
  *******************************************************************************
@@ -5595,6 +5597,8 @@ static int32_t wlanOnAtReset(void)
 		 * If WMT being removed in the future, you should invoke
 		 * wlanRemove directly from here
 		 */
+		kalSendAeeWarning("WFSYS", "wlanOnAtReset fail\n");
+		wlanRemove();
 #if 0
 		switch (eFailReason) {
 		case ADAPTER_START_FAIL:
@@ -5992,7 +5996,7 @@ wlanOffNotifyCfg80211Disconnect(IN struct GLUE_INFO *prGlueInfo)
  * \return (none)
  */
 /*----------------------------------------------------------------------------*/
-static void wlanRemove(void)
+void wlanRemove(void)
 {
 	struct net_device *prDev = NULL;
 	struct WLANDEV_INFO *prWlandevInfo = NULL;
