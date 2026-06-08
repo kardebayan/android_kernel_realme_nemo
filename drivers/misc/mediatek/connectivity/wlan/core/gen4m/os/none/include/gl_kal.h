@@ -1686,8 +1686,6 @@ void kalSetEmiMpuProtection(phys_addr_t emiPhyBase, uint32_t offset,
 void kalSetDrvEmiMpuProtection(phys_addr_t emiPhyBase, uint32_t offset,
 			       uint32_t size);
 #endif
-int32_t kalSetCpuNumFreq(uint32_t u4CoreNum,
-			 uint32_t u4Freq);
 int32_t kalPerMonSetForceEnableFlag(uint8_t uFlag);
 int32_t kalFbNotifierReg(IN struct GLUE_INFO *prGlueInfo);
 void kalFbNotifierUnReg(void);
