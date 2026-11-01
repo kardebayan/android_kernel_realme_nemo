@@ -1799,6 +1799,14 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_GET_4CELL_DATA:
 		{
 #define PDAF_DATA_SIZE 4096
+#ifdef CONFIG_MTK_IMGSENSOR_R_ABI
+#define FCELL_DATA_SIZE 8192
+			const kal_uint32 data_size =
+				pFeatureCtrl->FeatureId == SENSOR_FEATURE_GET_4CELL_DATA ?
+				FCELL_DATA_SIZE : PDAF_DATA_SIZE;
+#else
+			const kal_uint32 data_size = PDAF_DATA_SIZE;
+#endif
 			char *pPdaf_data = NULL;
 			unsigned long long *pFeaturePara_64 =
 				(unsigned long long *)pFeaturePara;
@@ -1813,22 +1821,22 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 				return -EINVAL;
 			}
 			/* buffer size exam */
-			if (buf_sz > PDAF_DATA_SIZE) {
+			if (buf_sz > data_size) {
 				kfree(pFeaturePara);
 				PK_PR_ERR(
 				"buffer size (%u) can't larger than %d bytes\n",
-					  buf_sz, PDAF_DATA_SIZE);
+					  buf_sz, data_size);
 				return -EINVAL;
 			}
 
 			pPdaf_data = kmalloc(
-				sizeof(char) * PDAF_DATA_SIZE, GFP_KERNEL);
+				sizeof(char) * data_size, GFP_KERNEL);
 			if (pPdaf_data == NULL) {
 				kfree(pFeaturePara);
 				PK_PR_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
-			memset(pPdaf_data, 0xff, sizeof(char) * PDAF_DATA_SIZE);
+			memset(pPdaf_data, 0xff, sizeof(char) * data_size);
 
 			if (pFeaturePara_64 != NULL)
 				*(pFeaturePara_64 + 1) = (uintptr_t) pPdaf_data;
@@ -1932,14 +1940,16 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		{
 			pr_debug("SENSOR_FEATURE_SET_TEST_PATTERN");
 			pFeaturePara_64 = (unsigned long long *)pFeaturePara;
-			usr_ptr =
-				(void *)(uintptr_t)(*(pFeaturePara_64 + 1));
+			/*
+			 * Older HALs only pass the pattern mode (one u64),
+			 * the solid color pointer is optional.
+			 */
+			if (FeatureParaLen >= 2 * sizeof(unsigned long long))
+				usr_ptr = (void *)(uintptr_t)
+					(*(pFeaturePara_64 + 1));
+			else
+				usr_ptr = NULL;
 			if (usr_ptr) {
-				if (FeatureParaLen < 2 * sizeof(unsigned long long)) {
-					PK_DBG("FeatureParaLen is too small %d\n", FeatureParaLen);
-					kfree(pFeaturePara);
-					return -EINVAL;
-				}
 				pData = kmalloc(sizeof(struct SET_SENSOR_PATTERN_SOLID_COLOR),
 					GFP_KERNEL);
 

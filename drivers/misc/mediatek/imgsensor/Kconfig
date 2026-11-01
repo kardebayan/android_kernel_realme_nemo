@@ -7,4 +7,28 @@ config MTK_IMGSENSOR
 	  CUSTOM_KERNEL_MAIN_BACKUP_IMGSENSOR, CUSTOM_KERNEL_SUB_IMGSENSOR,
 	  and CUSTOM_KERNEL_SUB_BACKUP_IMGSENSOR
 
+config MTK_IMGSENSOR_R_ABI
+	bool "Keep the Android R imgsensor userspace ABI"
+	depends on MTK_IMGSENSOR
+	help
+	  Camera HALs built against the Android R (kernel 4.14) imgsensor
+	  headers know 10 sensor scenarios (up to CUSTOM5) and 8 virtual
+	  channel infos and have no per-exposure PDAF virtual channel
+	  types. Kernel 4.19 extended these to 20 scenarios and 9 VC infos,
+	  which changes the size of ACDK_SENSOR_INFO_STRUCT (216 -> 296),
+	  ACDK_SENSOR_RESOLUTION_INFO_STRUCT (108 -> 148),
+	  SET_PD_BLOCK_INFO_T and SENSOR_VC_INFO2_STRUCT and the value of
+	  the VC feature types. Say Y here when running such a HAL.
+
+config OPLUS_IMGSENSOR
+	bool "oplus imgsensor extensions"
+	depends on MTK_IMGSENSOR
+	depends on OPLUS_FEATURE_OPROJECT && OPPO_DEVICE_IFNO
+	help
+	  oplus feature control IDs used by oplus camera HALs
+	  (module SN/info, EEPROM data at 0x8000/0x9000), the per-project
+	  sensor list, power sequence and hardware configuration selected
+	  at runtime from the oplus project number, and the camera module
+	  entries in /proc/devinfo.
+
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
