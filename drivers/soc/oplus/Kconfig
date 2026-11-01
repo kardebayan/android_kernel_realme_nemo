@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-2.0
+menu "OPLUS SoC drivers"
+
+config OPLUS_FEATURE_OPROJECT
+	bool "OPLUS project info"
+	depends on OF
+	help
+	  Exposes the project, PCB, operator and engineering versions
+	  passed by the bootloader in the oplus_project device tree node
+	  under /proc/oppoVersion, and to other drivers through
+	  get_project() and friends.
+
+config OPPO_DEVICE_IFNO
+	bool "OPLUS device info"
+	depends on OPLUS_FEATURE_OPROJECT
+	help
+	  Provides /proc/devinfo, where drivers register the name and
+	  vendor of the hardware components they detected.
+
+endmenu
