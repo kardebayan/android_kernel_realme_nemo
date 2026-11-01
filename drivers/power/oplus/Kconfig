@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+menuconfig OPLUS_CHARGER
+	bool "OPLUS charging system"
+	depends on I2C
+	select REGMAP_I2C
+	help
+	  Say Y here to enable the OPLUS charging framework: the charging
+	  state machine, the battery/usb/ac power supplies it registers,
+	  the external fuel gauge and the VOOC fast charging MCU drivers.
+
+if OPLUS_CHARGER
+
+config OPLUS_CHARGER_MTK
+	bool "OPLUS charger on MTK"
+	depends on MTK_CHARGER
+	help
+	  Say Y here to declare that the OPLUS charging framework runs on
+	  a MediaTek platform on top of the MediaTek charger class.
+
+config OPLUS_CHARGER_MTK6785
+	bool "OPLUS charger glue for MT6785 with MT6360"
+	depends on OPLUS_CHARGER_MTK && MACH_MT6785
+	depends on MT6360_PMU_CHARGER && TCPC_CLASS
+	select MTK_DISABLE_GAUGE
+	help
+	  Say Y here to replace the MediaTek charger manager with the OPLUS
+	  MT6785 glue, which drives the MT6360 charger (and the MP2650
+	  charger with the DA9313 divider on SuperVOOC boards) for the
+	  OPLUS charging framework.
+
+	  The battery is measured by an external BQ27541 gauge, so the
+	  MediaTek Gauge Master 3.0 and its battery power supply are
+	  disabled.
+
+endif # OPLUS_CHARGER
