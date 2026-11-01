@@ -828,6 +828,16 @@ struct LCM_PARAMS {
 
 	unsigned int hbm_en_time;
 	unsigned int hbm_dis_time;
+
+	/*
+	 * Backlight remapping, applied by disp_lcm before set_backlight_cmdq:
+	 * blmap holds (a, b) pairs, one per 32 levels of the 0..2047 input
+	 * range; the result is clamped to brightness_min..brightness_max.
+	 */
+	int *blmap;
+	int blmap_size;
+	int brightness_max;
+	int brightness_min;
 };
 
 

@@ -1488,6 +1488,57 @@ int disp_lcm_adjust_fps(void *cmdq, struct disp_lcm_handle *plcm, int fps)
 	return -1;
 }
 
+/*
+ * Map a backlight level onto the panel register range using the
+ * panel provided blmap. Panels with a 12-bit range (brightness_max
+ * above 2047) take 0..4095: the lower half goes through blmap and is
+ * capped at 3053, the upper half is mapped linearly onto 3054..max.
+ */
+static int disp_lcm_remap_backlight(struct LCM_PARAMS *params, int level)
+{
+	bool twelve_bits = params->brightness_max > 2047;
+	int idx, a, b;
+
+	if (level <= 0)
+		return 0;
+
+	if (level >= params->brightness_max)
+		return params->brightness_max;
+
+	if (twelve_bits && level >= 2048) {
+		level = 51 * level / 100 + 2010;
+		if (level < 3054)
+			level = 3054;
+		return min(level, params->brightness_max);
+	}
+
+	if (params->blmap) {
+		idx = DIV_ROUND_UP(level, 32) - 1;
+		if (idx * 2 + 1 >= params->blmap_size) {
+			DISP_PR_ERR("%s: level %d out of blmap range %d\n",
+				    __func__, level, params->blmap_size);
+			return 0;
+		}
+
+		a = params->blmap[idx * 2];
+		b = params->blmap[idx * 2 + 1];
+		if (level <= (twelve_bits ? 384 : 383))
+			level = a * level / 100 + b;
+		else
+			level = a * level / 100 - b;
+
+		if (level < 0) {
+			DISP_PR_ERR("%s: negative remapped level %d\n",
+				    __func__, level);
+			return 0;
+		}
+	}
+
+	level = max(level, params->brightness_min);
+
+	return min(level, twelve_bits ? 3053 : params->brightness_max);
+}
+
 int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 	void *handle, int level)
 {
@@ -1506,6 +1557,8 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 
 	lcm_drv = plcm->drv;
 	if (lcm_drv->set_backlight_cmdq) {
+		if (plcm->params->brightness_max)
+			level = disp_lcm_remap_backlight(plcm->params, level);
 		lcm_drv->set_backlight_cmdq(handle, level);
 	} else {
 		DISP_PR_ERR("FATAL ERROR, lcm_drv->set_backlight is null\n");
