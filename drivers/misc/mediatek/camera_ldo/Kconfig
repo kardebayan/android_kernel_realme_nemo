@@ -1,0 +1,8 @@
+config CAMERA_LDO
+	bool "WL2864C camera LDO"
+	depends on I2C
+	help
+	  Driver for the WL2864C seven channel camera LDO on I2C
+	  (mediatek,i2c_camera_ldo) with its enable GPIO
+	  (mediatek,gpio_camera_ldo), used by the imgsensor power
+	  sequences of the realme nemo family.

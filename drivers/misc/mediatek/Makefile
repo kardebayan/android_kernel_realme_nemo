@@ -147,6 +147,7 @@ else
 obj-$(CONFIG_MTK_LENS)      += lens/
 endif
 obj-$(CONFIG_MTK_CAM_CAL)   += cam_cal/
+obj-$(CONFIG_CAMERA_LDO)    += camera_ldo/
 obj-$(CONFIG_NFC_CHIP_SUPPORT) += nfc/
 obj-$(CONFIG_MTK_M4U) += m4u/
 obj-$(CONFIG_MTK_PSEUDO_M4U)   += pseudo_m4u/
