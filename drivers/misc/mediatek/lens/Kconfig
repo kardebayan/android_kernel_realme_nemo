@@ -217,6 +217,24 @@ config MTK_LENS_FP5510E2AF_SUPPORT
 	  lens driver for the camera sensor module
 	  Set as y if the driver is used in this project
 
+config MTK_LENS_FP5516AF_SUPPORT
+	bool "FP5516AF Lens Driver"
+	depends on MTK_LENS
+	help
+	  FP5516AF Lens Driver
+	  This config is used to enable the corresponding
+	  lens driver for the camera sensor module
+	  Set as y if the driver is used in this project
+
+config MTK_LENS_BU64253AF_SUPPORT
+	bool "BU64253AF Lens Driver"
+	depends on MTK_LENS
+	help
+	  BU64253AF Lens Driver
+	  This config is used to enable the corresponding
+	  lens driver for the camera sensor module
+	  Set as y if the driver is used in this project
+
 config MTK_LENS_MT9P017AF_SUPPORT
 	tristate "MT9P017AF Lens Driver"
 	help
