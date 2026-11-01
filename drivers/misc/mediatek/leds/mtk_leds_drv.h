@@ -19,7 +19,10 @@ extern int mt65xx_leds_brightness_set(enum mt65xx_led_type type,
 		enum led_brightness level);
 #ifdef CONFIG_MTK_LEDS
 extern int backlight_brightness_set(int level);
+/* lcd-backlight level range (255 unless the LCM takes more bits) */
+extern int mt_get_lcd_backlight_max(void);
 #else
 #define backlight_brightness_set(level) do { } while (0)
+static inline int mt_get_lcd_backlight_max(void) { return 255; }
 #endif
 extern int disp_bls_set_max_backlight(unsigned int level);

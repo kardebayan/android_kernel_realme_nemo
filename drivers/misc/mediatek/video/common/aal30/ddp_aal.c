@@ -1425,6 +1425,13 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	disp_aal_exit_idle(__func__, 1);
 
 	max_backlight = disp_pwm_get_max_backlight(DISP_PWM0);
+	/*
+	 * The PWM max level is kept in 10 bits; LCM controlled backlight
+	 * with a wider range is notified in its own units.
+	 */
+	if (mt_get_lcd_backlight_max() > 255)
+		max_backlight = max_backlight * mt_get_lcd_backlight_max() /
+				1023;
 	if (bl_1024 > max_backlight)
 		bl_1024 = max_backlight;
 

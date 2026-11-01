@@ -63,6 +63,8 @@ static DEFINE_MUTEX(leds_pmic_mutex);
 #define CLK_DIV1 0
 
 static unsigned int bl_brightness_hal = 102;
+/* lcd-backlight level range, raised by the optional "led-bits" property */
+static int lcd_backlight_max = 255;
 #ifdef CONFIG_MTK_PWM
 static unsigned int bl_duty_hal = 21;
 #endif
@@ -251,6 +253,16 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 			pled_dtsi[i].data = -1;
 		}
 
+		/* only LCM controlled backlight takes more than 10 bits */
+		if (i == MT65XX_LED_TYPE_LCD &&
+		    pled_dtsi[i].mode == MT65XX_LED_MODE_CUST_LCM &&
+		    !of_property_read_u32(led_node, "led-bits", &data) &&
+		    data > 8 && data <= 16) {
+			lcd_backlight_max = (1 << data) - 1;
+			LEDS_DEBUG("lcd-backlight max level: %d\n",
+				   lcd_backlight_max);
+		}
+
 		ret = of_property_read_u32_array(led_node, "pwm_config",
 				pwm_config, ARRAY_SIZE(pwm_config));
 		if (!ret) {
@@ -292,6 +304,11 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 
  out:
 	return pled_dtsi;
+}
+
+int mt_get_lcd_backlight_max(void)
+{
+	return lcd_backlight_max;
 }
 
 struct cust_mt65xx_led *mt_get_cust_led_list(void)
@@ -907,6 +924,24 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 		schedule_work(&led_data->work);
 		return;
 	}
+	if (lcd_backlight_max > 255) {
+		/*
+		 * The panel takes the whole range: pass the level through
+		 * to AAL and the LCM driver instead of scaling 8 bits up.
+		 */
+		backlight_debug_log(led_data->level, level);
+		disp_pq_notify_backlight_changed((((1 <<
+					MT_LED_INTERNAL_LEVEL_BIT_CNT) - 1) *
+					level + lcd_backlight_max / 2) /
+					lcd_backlight_max);
+#ifdef CONFIG_MTK_AAL_SUPPORT
+		disp_aal_notify_backlight_changed(level);
+#else
+		mt_mt65xx_led_set_cust(&led_data->cust, level);
+#endif
+		return;
+	}
+
 	if (level != 0 && level * CONFIG_LIGHTNESS_MAPPING_VALUE < 255)
 		level = 1;
 	else

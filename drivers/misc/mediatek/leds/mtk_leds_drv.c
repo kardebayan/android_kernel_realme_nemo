@@ -77,6 +77,7 @@ int __weak disp_bls_set_max_backlight(unsigned int level_1024) { return 0; };
 int __weak disp_bls_set_backlight(int level_1024) { return 0; }
 int __weak mtkfb_set_backlight_level(int level, int div) { return 0; };
 void __weak disp_pq_notify_backlight_changed(int bl_1024) {};
+int __weak mt_get_lcd_backlight_max(void) { return 255; }
 static int mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level);
 
 /****************************************************************************
@@ -354,6 +355,14 @@ EXPORT_SYMBOL(mt65xx_leds_brightness_set);
 int backlight_brightness_set(int level)
 {
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+	int max_level = mt_get_lcd_backlight_max();
+
+	if (max_level > 255) {
+		/* AAL works in the panel range, hand it over as is */
+		level = clamp(level, 0, max_level);
+		return mt65xx_led_set_cust(&cust_led_list[MT65XX_LED_TYPE_LCD],
+					   level);
+	}
 
 	if (level > ((1 << MT_LED_INTERNAL_LEVEL_BIT_CNT) - 1))
 		level = ((1 << MT_LED_INTERNAL_LEVEL_BIT_CNT) - 1);
@@ -473,6 +482,12 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 
 		g_leds_data[i]->cdev.name = cust_led_list[i].name;
 		g_leds_data[i]->cust.config_data = cust_led_list[i].config_data;
+
+		if (i == MT65XX_LED_TYPE_LCD &&
+		    mt_get_lcd_backlight_max() > 255) {
+			g_leds_data[i]->cdev.max_brightness =
+				mt_get_lcd_backlight_max();
+		}
 
 		g_leds_data[i]->cdev.brightness_set = mt65xx_led_set;
 		g_leds_data[i]->cdev.blink_set = mt65xx_blink_set;
