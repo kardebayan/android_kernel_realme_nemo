@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Board specific overrides of the MT6785 base device tree,
+ * shared by all oppo6785 projects.
+ */
+
+&btcvsd {
+	disable_write_silence = <1>;
+};
+
+&flashlights_mt6360 {
+	decouple = <1>;
+};
+
+&mrdump_ext_rst {
+	compatible = "mediatek, mrdump_ext_disable";
+};
+
+&mt6360_pmu {
+	core {
+		sda_sizesel = <3>;
+		sda_drvsrsel = <1>;
+	};
+};
+
+&mt_pmic_vmch_ldo_reg {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+};
+
+&mt6360_typec {
+	mt-tcpc,role_def = <1>;
+
+	pd-data {
+		pd,sink-pdo-size = <2>;
+		pd,sink-pdo-data = <0x000190c8 0x0001912c>;
+	};
+};
+
+&lk_charger {
+	max_charger_voltage = <5800000>;
+};
+
+&charger {
+	pd_vbus_upper_bound = <12000000>;
+};

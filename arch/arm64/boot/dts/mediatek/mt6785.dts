@@ -3188,7 +3188,7 @@ page_owner=on loop.max_part=7";
 		block_size = <0x1000>;
 	};
 
-	mtk-btcvsd-snd@18050000 {
+	btcvsd: mtk-btcvsd-snd@18050000 {
 		compatible = "mediatek,mtk-btcvsd-snd";
 		reg=<0 0x18050000 0 0x1000>, /*PKV_PHYSICAL_BASE*/
 		    <0 0x18080000 0 0x10000>; /*SRAM_BANK2*/
@@ -4521,11 +4521,6 @@ page_owner=on loop.max_part=7";
 			ct = <0>;
 			part = <0>;
 		};
-		channel@2 {
-			type = <0>;
-			ct = <1>;
-			part = <0>;
-		};
 	};
 
 	ccu@1a0a0000 {
@@ -4728,7 +4723,19 @@ page_owner=on loop.max_part=7";
 	};
 
 	goodix_fp: fingerprint {
-		compatible = "mediatek,goodix-fp";
+		compatible = "goodix,goodix_fp";
+	};
+
+	fpc_interrupt: fpc_interrupt {
+		compatible = "fpc,fpc_irq";
+	};
+
+	oplus_fp_common: oplus_fp_common {
+		compatible = "oplus,fp_common";
+	};
+
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
 	};
 
 	accdet: accdet {
@@ -4964,10 +4971,16 @@ page_owner=on loop.max_part=7";
 		reg = <0 0x14013000 0 0x1000>;
 	};
 
-	dsi0@14014000 {
+	dsi0: dsi0@14014000 {
 		compatible = "mediatek,dsi0";
 		reg = <0 0x14014000 0 0x1000>;
 		interrupts = <GIC_SPI 260 IRQ_TYPE_LEVEL_LOW>;
+	};
+
+	dispsys_config: dispsys_config@14116000 {
+		compatible = "mediatek,dispsys_config",
+			     "syscon",
+			     "mediatek,mt6885-mmsys";
 	};
 
 	dpi0@14015000 {
@@ -5576,6 +5589,10 @@ page_owner=on loop.max_part=7";
 		reg = <0 0x38000000 0 0x1000>;
 	};
 
+	irq_nfc: irq_nfc {
+		compatible = "mediatek,irq_nfc-eint";
+	};
+
 	mt_charger: mt_charger {
 		compatible = "mediatek,mt-charger";
 		bootmode = <&chosen>;
@@ -6010,6 +6027,8 @@ page_owner=on loop.max_part=7";
 #include "mediatek/cust_mt6785_msdc.dtsi"
 #include "mediatek/v1/mt6360.dtsi"
 #include "mediatek/v1/mt6360_pd.dtsi"
+#include "mediatek/mt6785-sia81xx.dtsi"
 #ifdef CONFIG_MTK_ENABLE_GENIEZONE
 #include "mediatek/trusty.dtsi"
 #endif
+#include "mediatek/camera_ldo.dtsi"
