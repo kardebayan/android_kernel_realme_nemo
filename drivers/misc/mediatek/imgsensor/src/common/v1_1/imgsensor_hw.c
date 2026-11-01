@@ -11,6 +11,18 @@
 
 #include "imgsensor_sensor.h"
 #include "imgsensor_hw.h"
+#ifdef CONFIG_OPLUS_IMGSENSOR
+#include "imgsensor_hwcfg_custom.h"
+#endif
+
+static struct IMGSENSOR_HW_CFG *imgsensor_hw_custom_config(void)
+{
+#ifdef CONFIG_OPLUS_IMGSENSOR
+	return Oplusimgsensor_Custom_Config();
+#else
+	return imgsensor_custom_config;
+#endif
+}
 
 /*the index is consistent with enum IMGSENSOR_HW_PIN*/
 char * const imgsensor_hw_pin_names[] = {
@@ -26,6 +38,10 @@ char * const imgsensor_hw_pin_names[] = {
 #endif
 	"vcamd",
 	"vcamio",
+#ifdef CONFIG_OPLUS_IMGSENSOR
+	"vcamaf",
+	"vcama2",
+#endif
 #ifdef MIPI_SWITCH
 	"mipi_switch_en",
 	"mipi_switch_sel",
@@ -37,7 +53,10 @@ char * const imgsensor_hw_pin_names[] = {
 char * const imgsensor_hw_id_names[] = {
 	"mclk",
 	"regulator",
-	"gpio"
+	"gpio",
+#ifdef CONFIG_OPLUS_IMGSENSOR
+	"wl2864",
+#endif
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw)
@@ -56,7 +75,7 @@ enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw)
 	/* update the imgsensor_custom_cfg by dts */
 	for (i = 0; i < IMGSENSOR_SENSOR_IDX_MAX_NUM; i++) {
 		PK_DBG("IMGSENSOR_SENSOR_IDX: %d\n", i);
-		pcust_pwr_cfg = imgsensor_custom_config;
+		pcust_pwr_cfg = imgsensor_hw_custom_config();
 		while (pcust_pwr_cfg->sensor_idx != i &&
 		       pcust_pwr_cfg->sensor_idx != IMGSENSOR_SENSOR_IDX_NONE)
 			pcust_pwr_cfg++;
@@ -104,7 +123,7 @@ enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw)
 	for (i = 0; i < IMGSENSOR_SENSOR_IDX_MAX_NUM; i++) {
 		psensor_pwr = &phw->sensor_pwr[i];
 
-		pcust_pwr_cfg = imgsensor_custom_config;
+		pcust_pwr_cfg = imgsensor_hw_custom_config();
 		while (pcust_pwr_cfg->sensor_idx != i &&
 		       pcust_pwr_cfg->sensor_idx != IMGSENSOR_SENSOR_IDX_NONE)
 			pcust_pwr_cfg++;
@@ -282,6 +301,23 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 		ret = IMGSENSOR_RETURN_ERROR;
 		return ret;
 	}
+#ifdef CONFIG_OPLUS_IMGSENSOR
+	{
+		struct IMGSENSOR_HW_POWER_SEQ *ppwr_seq;
+
+		ppwr_seq = Oplusimgsensor_matchhwcfg_power(
+				IMGSENSOR_POWER_MATCHMIPI_HWCFG_INDEX);
+		if (ppwr_seq != NULL)
+			imgsensor_hw_power_sequence(phw, sensor_idx,
+					pwr_status, ppwr_seq, str_index);
+
+		ppwr_seq = Oplusimgsensor_matchhwcfg_power(
+				IMGSENSOR_POWER_MATCHSENSOR_HWCFG_INDEX);
+		if (ppwr_seq != NULL)
+			imgsensor_hw_power_sequence(phw, sensor_idx,
+					pwr_status, ppwr_seq, curr_sensor_name);
+	}
+#else
 	imgsensor_hw_power_sequence(
 			phw,
 			sensor_idx,
@@ -293,6 +329,7 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 			phw,
 			sensor_idx,
 			pwr_status, sensor_power_sequence, curr_sensor_name);
+#endif
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }

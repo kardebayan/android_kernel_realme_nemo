@@ -43,6 +43,9 @@
 #include "imgsensor_oc.h"
 #endif
 #include "imgsensor.h"
+#ifdef CONFIG_OPLUS_IMGSENSOR
+#include "imgsensor_hwcfg_custom.h"
+#endif
 
 #ifdef SENINF_N3D_SUPPORT
 #include "n3d_fsync/n3d_if.h"
@@ -496,6 +499,9 @@ static void imgsensor_init_sensor_list(void)
 	struct device_node *of_node
 		= of_find_compatible_node(NULL, NULL, "mediatek,imgsensor");
 
+#ifdef CONFIG_OPLUS_IMGSENSOR
+	psensor_list = Oplusimgsensor_Sensorlist();
+#endif
 	ret = of_property_read_string(of_node, "cust-sensor", &penable_sensor);
 	if (ret < 0) {
 		PK_DBG("Property cust-sensor not defined\n");
@@ -568,9 +574,15 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 	struct IMGSENSOR_SENSOR_INST *psensor_inst = &psensor->inst;
 
 	imgsensor_mutex_init(psensor_inst);
+#ifdef CONFIG_OPLUS_IMGSENSOR
+	imgsensor_i2c_init(&psensor_inst->i2c_cfg,
+	Oplusimgsensor_Custom_Config()[
+	(unsigned int)psensor_inst->sensor_idx].i2c_dev);
+#else
 	imgsensor_i2c_init(&psensor_inst->i2c_cfg,
 	imgsensor_custom_config[
 	(unsigned int)psensor_inst->sensor_idx].i2c_dev);
+#endif
 	imgsensor_i2c_filter_msg(&psensor_inst->i2c_cfg, true);
 
 	while (i < MAX_NUM_OF_SUPPORT_SENSOR && pimgsensor->psensor_list[i]) {
@@ -995,6 +1007,17 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 	/*in case that some structure are passed from user sapce by ptr */
 	switch (pFeatureCtrl->FeatureId) {
+#ifdef CONFIG_OPLUS_IMGSENSOR
+	case SENSOR_FEATURE_GET_EEPROM_COMDATA:
+	case SENSOR_FEATURE_GET_EEPROM_STEREODATA:
+		/*
+		 * The oplus EEPROM cache behind these IDs is never filled for
+		 * the sensors of this platform, the R kernel always answered
+		 * ERROR_MSDK_IS_ACTIVATED without touching the buffer.
+		 */
+		ret = ERROR_MSDK_IS_ACTIVATED;
+		break;
+#endif
 	case SENSOR_FEATURE_SET_MCLK_DRIVE_CURRENT:
 	{
 		MUINT32 __current = (*(MUINT32 *)pFeaturePara);
@@ -2423,6 +2446,9 @@ static int imgsensor_probe(struct platform_device *pplatform_device)
 
 	phw->common.pplatform_device = pplatform_device;
 
+#ifdef CONFIG_OPLUS_IMGSENSOR
+	oplus_imgsensor_hwcfg();
+#endif
 	imgsensor_hw_init(phw);
 	imgsensor_i2c_create();
 	imgsensor_proc_init();

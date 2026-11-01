@@ -30,6 +30,8 @@ obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_legacy.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_proc.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_sensor_list.o
 obj-y				+= ../common/$(COMMON_VERSION)/seninf.o
+obj-$(CONFIG_OPLUS_IMGSENSOR)	+= ../OplusImgsensor/imgsensor_hwcfg_custom.o
+obj-$(CONFIG_OPLUS_IMGSENSOR)	+= ../OplusImgsensor/imgsensor_hwcfg_mt6785.o
 define FILTER_DRV
 ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)
 ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/$(1)),)
