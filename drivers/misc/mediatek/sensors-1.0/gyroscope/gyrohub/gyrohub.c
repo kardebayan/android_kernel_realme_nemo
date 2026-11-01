@@ -10,6 +10,9 @@
 #include <gyroscope.h>
 #include <SCP_sensorHub.h>
 #include "SCP_power_monitor.h"
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+#include "../../oppo_sensor_devinfo/sensor_devinfo.h"
+#endif
 
 /* name must different with gsensor gyrohub */
 #define GYROHUB_DEV_NAME    "gyro_hub"
@@ -437,6 +440,11 @@ static void scp_init_work_done(struct work_struct *work)
 #ifndef MTK_OLD_FACTORY_CALIBRATION
 	int32_t cfg_data[12] = {0};
 #endif
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	struct cali_data c_data;
+
+	get_sensor_parameter(&c_data);
+#endif
 
 	if (atomic_read(&obj->scp_init_done) == 0) {
 		pr_err("scp is not ready to send cmd\n");
@@ -454,9 +462,20 @@ static void scp_init_work_done(struct work_struct *work)
 	cfg_data[1] = obj->dynamic_cali[1];
 	cfg_data[2] = obj->dynamic_cali[2];
 
+#ifndef CONFIG_OPLUS_FEATURE_SENSOR
 	cfg_data[3] = obj->static_cali[0];
 	cfg_data[4] = obj->static_cali[1];
 	cfg_data[5] = obj->static_cali[2];
+#else
+	/* the static bias is the factory one from oppo_custom */
+	cfg_data[3] = c_data.gyro_data[0];
+	cfg_data[4] = c_data.gyro_data[1];
+	cfg_data[5] = c_data.gyro_data[2];
+
+	obj->static_cali[0] = c_data.gyro_data[0];
+	obj->static_cali[1] = c_data.gyro_data[1];
+	obj->static_cali[2] = c_data.gyro_data[2];
+#endif
 
 	cfg_data[6] = obj->temperature_cali[0];
 	cfg_data[7] = obj->temperature_cali[1];
@@ -590,7 +609,16 @@ static int gyrohub_factory_clear_cali(void)
 		return -1;
 	}
 #endif
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	{
+		int32_t tx_buff[12] = {0};
+
+		return sensor_cfg_to_hub(ID_GYROSCOPE,
+			(uint8_t *)tx_buff, sizeof(tx_buff));
+	}
+#else
 	return 0;
+#endif
 }
 static int gyrohub_factory_set_cali(int32_t data[3])
 {
@@ -603,7 +631,23 @@ static int gyrohub_factory_set_cali(int32_t data[3])
 		return -1;
 	}
 #endif
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	{
+		struct gyrohub_ipi_data *obj = obj_ipi_data;
+		/* static bias from the factory, no dynamic/temperature one */
+		int32_t tx_buff[12] = {0, 0, 0, data[0], data[1], data[2]};
+
+		obj->static_cali[0] = data[0];
+		obj->static_cali[1] = data[1];
+		obj->static_cali[2] = data[2];
+		update_sensor_parameter();
+
+		return sensor_cfg_to_hub(ID_GYROSCOPE,
+			(uint8_t *)tx_buff, sizeof(tx_buff));
+	}
+#else
 	return 0;
+#endif
 }
 static int gyrohub_factory_get_cali(int32_t data[3])
 {
@@ -743,6 +787,21 @@ static int gyrohub_set_cali(uint8_t *data, uint8_t count)
 {
 	int32_t *buf = (int32_t *)data;
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	struct cali_data c_data;
+
+	/*
+	 * Unless the device uses the MediaTek calibration flow, the static
+	 * bias comes from the oplus factory calibration in oppo_custom,
+	 * not from the HAL.
+	 */
+	if (!is_support_mtk_cali_func()) {
+		get_sensor_parameter(&c_data);
+		buf[3] = c_data.gyro_data[0];
+		buf[4] = c_data.gyro_data[1];
+		buf[5] = c_data.gyro_data[2];
+	}
+#endif
 
 	spin_lock(&calibration_lock);
 	obj->dynamic_cali[0] = buf[0];

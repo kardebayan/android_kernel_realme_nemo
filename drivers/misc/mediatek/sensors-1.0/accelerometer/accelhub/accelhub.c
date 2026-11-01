@@ -10,6 +10,9 @@
 #include <SCP_sensorHub.h>
 #include <accel.h>
 #include <hwmsensor.h>
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+#include "../../oppo_sensor_devinfo/sensor_devinfo.h"
+#endif
 
 #define DEBUG 1
 #define SW_CALIBRATION
@@ -345,6 +348,19 @@ static ssize_t test_cali_store(struct device_driver *ddri, const char *buf,
 	return tCount;
 }
 
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+/* puts the firmware pedometer in factory mode, returns its answer */
+static ssize_t factory_step_debounce_show(struct device_driver *ddri,
+					  char *buf)
+{
+	static int result;
+
+	oppo_send_factory_mode_cmd_to_hub(ID_ACCELEROMETER, 1, &result);
+	return snprintf(buf, PAGE_SIZE, "%d\n", result);
+}
+static DRIVER_ATTR_RO(factory_step_debounce);
+#endif
+
 static DRIVER_ATTR_RO(chipinfo);
 static DRIVER_ATTR_RO(sensordata);
 static DRIVER_ATTR_RO(cali);
@@ -359,6 +375,9 @@ static struct driver_attribute *accelhub_attr_list[] = {
 	&driver_attr_trace,      /*trace log */
 	&driver_attr_chip_orientation,
 	&driver_attr_test_cali,
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	&driver_attr_factory_step_debounce,
+#endif
 };
 
 static int accelhub_create_attr(struct device_driver *driver)
@@ -401,6 +420,11 @@ static void scp_init_work_done(struct work_struct *work)
 #ifndef MTK_OLD_FACTORY_CALIBRATION
 	int32_t cfg_data[6] = {0};
 #endif
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	struct cali_data c_data;
+
+	get_sensor_parameter(&c_data);
+#endif
 
 	if (atomic_read(&obj->scp_init_done) == 0) {
 		pr_debug("scp is not ready to send cmd\n");
@@ -418,9 +442,20 @@ static void scp_init_work_done(struct work_struct *work)
 	cfg_data[1] = obj->dynamic_cali[1];
 	cfg_data[2] = obj->dynamic_cali[2];
 
+#ifndef CONFIG_OPLUS_FEATURE_SENSOR
 	cfg_data[3] = obj->static_cali[0];
 	cfg_data[4] = obj->static_cali[1];
 	cfg_data[5] = obj->static_cali[2];
+#else
+	/* the static bias is the factory one from oppo_custom */
+	cfg_data[3] = c_data.acc_data[0];
+	cfg_data[4] = c_data.acc_data[1];
+	cfg_data[5] = c_data.acc_data[2];
+
+	obj->static_cali[0] = c_data.acc_data[0];
+	obj->static_cali[1] = c_data.acc_data[1];
+	obj->static_cali[2] = c_data.acc_data[2];
+#endif
 	spin_unlock(&calibration_lock);
 	err = sensor_cfg_to_hub(ID_ACCELEROMETER, (uint8_t *)cfg_data,
 				sizeof(cfg_data));
@@ -533,7 +568,16 @@ static int gsensor_factory_clear_cali(void)
 		return -1;
 	}
 #endif
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	{
+		int32_t tx_buff[6] = {0};
+
+		return sensor_cfg_to_hub(ID_ACCELEROMETER,
+			(uint8_t *)tx_buff, sizeof(tx_buff));
+	}
+#else
 	return 0;
+#endif
 }
 static int gsensor_factory_set_cali(int32_t data[3])
 {
@@ -546,7 +590,23 @@ static int gsensor_factory_set_cali(int32_t data[3])
 		return -1;
 	}
 #endif
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	{
+		struct accelhub_ipi_data *obj = obj_ipi_data;
+		/* no dynamic bias, static bias from the factory */
+		int32_t tx_buff[6] = {0, 0, 0, data[0], data[1], data[2]};
+
+		obj->static_cali[0] = data[0];
+		obj->static_cali[1] = data[1];
+		obj->static_cali[2] = data[2];
+		update_sensor_parameter();
+
+		return sensor_cfg_to_hub(ID_ACCELEROMETER,
+			(uint8_t *)tx_buff, sizeof(tx_buff));
+	}
+#else
 	return 0;
+#endif
 }
 static int gsensor_factory_get_cali(int32_t data[3])
 {
@@ -684,6 +744,21 @@ static int gsensor_set_cali(uint8_t *data, uint8_t count)
 {
 	int32_t *buf = (int32_t *)data;
 	struct accelhub_ipi_data *obj = obj_ipi_data;
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	struct cali_data c_data;
+
+	/*
+	 * Unless the device uses the MediaTek calibration flow, the static
+	 * bias comes from the oplus factory calibration in oppo_custom,
+	 * not from the HAL.
+	 */
+	if (!is_support_mtk_cali_func()) {
+		get_sensor_parameter(&c_data);
+		buf[3] = c_data.acc_data[0];
+		buf[4] = c_data.acc_data[1];
+		buf[5] = c_data.acc_data[2];
+	}
+#endif
 
 	spin_lock(&calibration_lock);
 	obj->dynamic_cali[0] = buf[0];
