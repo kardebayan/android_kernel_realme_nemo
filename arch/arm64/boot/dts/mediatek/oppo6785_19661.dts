@@ -148,6 +148,7 @@
 		//#else
 		led_mode = <4>;
 		//#endif
+		led-bits = <11>;
 		data = <1>;
 		pwm_config = <0 1 0 0 0>;
 	};
