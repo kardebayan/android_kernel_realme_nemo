@@ -2531,6 +2531,41 @@ static inline int mt6360_check_revision(struct i2c_client *client)
 	return id;
 }
 
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+/* water_detect_feature of the oplus usb power supply */
+static struct mt6360_chip *oplus_mt6360_chip;
+
+void oplus_set_water_detect(bool enable)
+{
+	struct mt6360_chip *chip = oplus_mt6360_chip;
+
+	if (!chip)
+		return;
+
+	tcpci_lock_typec(chip->tcpc);
+	if (enable) {
+		chip->tcpc->tcpc_flags |= TCPC_FLAGS_WATER_DETECTION;
+	} else {
+#ifdef CONFIG_WD_SBU_POLLING
+		mt6360_enable_usbid_polling(chip, false);
+#endif /* CONFIG_WD_SBU_POLLING */
+		chip->tcpc->tcpc_flags &= ~TCPC_FLAGS_WATER_DETECTION;
+	}
+	tcpci_unlock_typec(chip->tcpc);
+}
+EXPORT_SYMBOL(oplus_set_water_detect);
+
+int oplus_get_water_detect(void)
+{
+	struct mt6360_chip *chip = oplus_mt6360_chip;
+
+	if (!chip)
+		return 0;
+	return !!(chip->tcpc->tcpc_flags & TCPC_FLAGS_WATER_DETECTION);
+}
+EXPORT_SYMBOL(oplus_get_water_detect);
+#endif /* CONFIG_OPLUS_CHARGER_MTK6785 */
+
 static int mt6360_i2c_probe(struct i2c_client *client,
 			    const struct i2c_device_id *id)
 {
@@ -2635,6 +2670,9 @@ static int mt6360_i2c_probe(struct i2c_client *client,
 #ifdef CONFIG_WATER_DETECTION
 	mt6360_water_calibration(chip->tcpc);
 #endif /* CONFIG_WATER_DETECTION */
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	oplus_mt6360_chip = chip;
+#endif
 	dev_info(chip->dev, "%s successfully!\n", __func__);
 	return 0;
 
@@ -2652,6 +2690,9 @@ static int mt6360_i2c_remove(struct i2c_client *client)
 	struct mt6360_chip *chip = i2c_get_clientdata(client);
 
 	if (chip) {
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+		oplus_mt6360_chip = NULL;
+#endif
 		cancel_delayed_work_sync(&chip->poll_work);
 #ifdef CONFIG_WD_SBU_POLLING
 		cancel_work_sync(&chip->wd_work);
