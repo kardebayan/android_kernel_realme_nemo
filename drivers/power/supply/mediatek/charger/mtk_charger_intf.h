@@ -267,6 +267,15 @@ struct charger_custom_data {
 
 	int vsys_watt;
 	int ibus_err;
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	/* step charging */
+	int dual_charger_support;
+	int step1_time;
+	int step1_current_ma;
+	int step2_time;
+	int step2_current_ma;
+	int step3_current_ma;
+#endif
 };
 
 struct charger_data {
@@ -279,6 +288,10 @@ struct charger_data {
 	int input_current_limit_by_aicl;
 	int junction_temp_min;
 	int junction_temp_max;
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	int chargeric_temp_volt;
+	int chargeric_temp;
+#endif
 };
 
 struct charger_manager {
@@ -309,6 +322,25 @@ struct charger_manager {
 
 	struct adapter_device *pd_adapter;
 
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	struct iio_channel	*chargeric_temp_chan;
+	struct iio_channel	*charger_id_chan;
+	struct iio_channel	*usb_temp_v_l_chan;
+	struct iio_channel	*usb_temp_v_r_chan;
+	struct delayed_work	step_charging_work;
+	int step_status;
+	int step_status_pre;
+	int step_cnt;
+	int step_chg_current;
+	bool support_ntc_01c_precision;
+	/* ccdetect */
+	int ccdetect_gpio;
+	int ccdetect_irq;
+	struct pinctrl_state *ccdetect_active;
+	struct pinctrl_state *ccdetect_sleep;
+	struct pinctrl *pinctrl;
+	bool in_good_connect;
+#endif
 
 	enum charger_type chr_type;
 	bool can_charging;
@@ -388,6 +420,10 @@ struct charger_manager {
 
 	int pd_type;
 	bool pd_reset;
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	struct tcpc_device *tcpc;
+	struct notifier_block pd_nb;
+#endif
 
 	/* thread related */
 	struct hrtimer charger_kthread_timer;

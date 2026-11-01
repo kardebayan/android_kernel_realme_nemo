@@ -45,6 +45,15 @@
 
 #include "mtk_charger_intf.h"
 
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+/*
+ * The oplus charger registers the ac, usb and battery power supplies
+ * and owns the MT6360 power path. Only the "charger" type supply is
+ * provided here, charger type changes are forwarded to oplus.
+ */
+extern bool oplus_chg_wake_update_work(void);
+#endif
+
 int check_cable_in;
 struct tag_bootmode {
 	u32 size;
@@ -188,6 +197,11 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 		}
 	}
 
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	/* KPOC power off on unplug is handled by the oplus charger */
+	return ret;
+#endif
+
 	if (!mtk_chg->chg_online) {
 // workaround for mt6768
 		//boot_mode = get_boot_mode();
@@ -281,6 +295,9 @@ static int mt_charger_set_property(struct power_supply *psy,
 	#ifdef CONFIG_EXTCON_USB_CHG
 	struct usb_extcon_info *info;
 	#endif
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	static struct power_supply *battery_psy;
+#endif
 
 	pr_info("%s\n", __func__);
 
@@ -301,12 +318,20 @@ static int mt_charger_set_property(struct power_supply *psy,
 		return 0;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		mtk_chg->chg_type = val->intval;
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+		if (!battery_psy)
+			battery_psy = power_supply_get_by_name("battery");
+		if (battery_psy)
+			power_supply_changed(battery_psy);
+		oplus_chg_wake_update_work();
+#else
 		if (mtk_chg->chg_type != CHARGER_UNKNOWN)
 			charger_manager_force_disable_power_path(
 				cti->chg_consumer, MAIN_CHARGER, false);
 		else if (!cti->tcpc_kpoc)
 			charger_manager_force_disable_power_path(
 				cti->chg_consumer, MAIN_CHARGER, true);
+#endif
 		break;
 	default:
 		return -EINVAL;
@@ -341,8 +366,10 @@ static int mt_charger_set_property(struct power_supply *psy,
 #ifdef CONFIG_MACH_MT6771
 	power_supply_changed(mtk_chg->chg_psy);
 #endif
+#ifndef CONFIG_OPLUS_CHARGER_MTK6785
 	power_supply_changed(mtk_chg->ac_psy);
 	power_supply_changed(mtk_chg->usb_psy);
+#endif
 
 	return 0;
 }
@@ -446,6 +473,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 	struct chg_type_info *cti = container_of(pnb,
 		struct chg_type_info, pd_nb);
 	int vbus = 0;
+#ifndef CONFIG_OPLUS_CHARGER_MTK6785
 	struct power_supply *ac_psy = power_supply_get_by_name("ac");
 	struct power_supply *usb_psy = power_supply_get_by_name("usb");
 	struct mt_charger *mtk_chg_ac;
@@ -471,6 +499,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 		chr_err("%s, fail to get mtk_chg_usb\n", __func__);
 		return NOTIFY_BAD;
 	}
+#endif
 
 	switch (event) {
 	case TCP_NOTIFY_SINK_VBUS:
@@ -495,6 +524,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 				vbus = battery_get_vbus();
 				pr_info("%s KPOC Plug out, vbus = %d\n",
 					__func__, vbus);
+#ifndef CONFIG_OPLUS_CHARGER_MTK6785
 				mtk_chg_ac->chg_type = CHARGER_UNKNOWN;
 				mtk_chg_usb->chg_type = CHARGER_UNKNOWN;
 				power_supply_changed(ac_psy);
@@ -502,6 +532,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 				queue_work_on(cpumask_first(cpu_online_mask),
 					      cti->pwr_off_wq,
 					      &cti->pwr_off_work);
+#endif
 				break;
 			}
 			pr_info("%s USB Plug out\n", __func__);
@@ -767,6 +798,7 @@ static int mt_charger_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+#ifndef CONFIG_OPLUS_CHARGER_MTK6785
 	mt_chg->ac_psy = power_supply_register(&pdev->dev, &mt_chg->ac_desc,
 		&mt_chg->ac_cfg);
 	if (IS_ERR(mt_chg->ac_psy)) {
@@ -784,6 +816,7 @@ static int mt_charger_probe(struct platform_device *pdev)
 		ret = PTR_ERR(mt_chg->usb_psy);
 		goto err_usb_psy;
 	}
+#endif
 
 	cti = devm_kzalloc(&pdev->dev, sizeof(*cti), GFP_KERNEL);
 	if (!cti) {
@@ -872,10 +905,12 @@ static int mt_charger_probe(struct platform_device *pdev)
 err_get_tcpc_dev:
 	devm_kfree(&pdev->dev, cti);
 err_no_mem:
+#ifndef CONFIG_OPLUS_CHARGER_MTK6785
 	power_supply_unregister(mt_chg->usb_psy);
 err_usb_psy:
 	power_supply_unregister(mt_chg->ac_psy);
 err_ac_psy:
+#endif
 	power_supply_unregister(mt_chg->chg_psy);
 	return ret;
 }
@@ -886,8 +921,10 @@ static int mt_charger_remove(struct platform_device *pdev)
 	struct chg_type_info *cti = mt_charger->cti;
 
 	power_supply_unregister(mt_charger->chg_psy);
+#ifndef CONFIG_OPLUS_CHARGER_MTK6785
 	power_supply_unregister(mt_charger->ac_psy);
 	power_supply_unregister(mt_charger->usb_psy);
+#endif
 
 	pr_info("%s\n", __func__);
 	if (cti->chgdet_task) {
@@ -917,8 +954,10 @@ static int mt_charger_resume(struct device *dev)
 	}
 
 	power_supply_changed(mt_charger->chg_psy);
+#ifndef CONFIG_OPLUS_CHARGER_MTK6785
 	power_supply_changed(mt_charger->ac_psy);
 	power_supply_changed(mt_charger->usb_psy);
+#endif
 
 	return 0;
 }
