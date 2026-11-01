@@ -78,6 +78,7 @@ obj-y += spi_slave_drv/
 endif
 obj-$(CONFIG_MTK_MT6382_BDG) += hifi4dsp_spi/
 obj-$(CONFIG_MTK_FB) += video/
+obj-$(CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT) += dfrc/
 obj-$(CONFIG_MTK_SYNC) += sync/
 obj-${CONFIG_MTK_ATF_LOGGER} += atf/
 obj-$(CONFIG_MTK_APUSYS_SUPPORT) += apusys/
