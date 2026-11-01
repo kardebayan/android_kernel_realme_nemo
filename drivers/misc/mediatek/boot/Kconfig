@@ -1,0 +1,8 @@
+config MTK_BOOT
+	bool "Enable MTK Boot information API"
+	depends on OF
+	help
+	  Provide the boot mode API declared in mt-plat/mtk_boot_common.h
+	  (get_boot_mode(), get_boot_type(), is_meta_mode() and
+	  is_advanced_meta_mode()), based on the atag,boot property LK
+	  passes in /chosen. Say Y for platforms whose drivers use it.
