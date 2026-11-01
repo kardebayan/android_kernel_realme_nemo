@@ -11,6 +11,10 @@
 #include <linux/irq.h>
 #include "../inc/mt6360_pmu.h"
 
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+extern void oplus_mt6360_chrdet_handler(void);
+#endif
+
 static irqreturn_t mt6360_pmu_irq_handler(int irq, void *data)
 {
 	struct mt6360_pmu_info *mpi = data;
@@ -44,6 +48,11 @@ static irqreturn_t mt6360_pmu_irq_handler(int irq, void *data)
 				else
 					dev_dbg(mpi->dev,
 						"handle_irq [%d,%d]\n", i, j);
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+				/* CHG_IRQ8: VBUS (chrdet_ext) events */
+				if (i == 7)
+					oplus_mt6360_chrdet_handler();
+#endif
 				handle_nested_irq(ret);
 			} else
 				dev_err(mpi->dev, "unmapped [%d,%d]\n", i, j);

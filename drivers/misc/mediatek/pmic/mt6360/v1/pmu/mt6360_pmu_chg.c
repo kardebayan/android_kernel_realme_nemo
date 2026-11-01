@@ -106,10 +106,22 @@ struct mt6360_pmu_chg_info {
 	struct workqueue_struct *pe_wq;
 	struct work_struct pe_work;
 	u8 ctd_dischg_status;
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	atomic_t suspended;
+#endif
 };
 
 /* for recive bat oc notify */
 struct mt6360_pmu_chg_info *g_mpci;
+
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+/* MT6360 charger used by the oplus charger, set once probed */
+static struct mt6360_pmu_chg_info *oplus_mpci;
+
+extern bool is_mtksvooc_project;
+extern bool is_mtkvooc30_project;
+extern void oplus_chg_set_otg_online(bool online);
+#endif
 
 enum mt6360_iinlmtsel {
 	MT6360_IINLMTSEL_AICR_3250 = 0,
@@ -700,6 +712,21 @@ static int mt6360_chgdet_post_process(struct mt6360_pmu_chg_info *mpci)
 		break;
 	case MT6360_CHG_TYPE_DCP:
 		mpci->chg_type = STANDARD_CHARGER;
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+		/* Keep D+/D- quiet for the VOOC adapter handshake */
+		if (is_mtksvooc_project || is_mtkvooc30_project) {
+			ret = mt6360_pmu_reg_write(mpci->mpi,
+						   MT6360_PMU_HVDCP_DEVICE_TYPE,
+						   0x0);
+			if (ret >= 0)
+				ret = mt6360_pmu_reg_write(mpci->mpi,
+						MT6360_PMU_DPDM_CTRL, 0x13);
+			if (ret < 0)
+				dev_err(mpci->dev,
+					"%s: fail to set dpdm for vooc\n",
+					__func__);
+		}
+#endif
 		break;
 	}
 out:
@@ -1457,6 +1484,11 @@ static int mt6360_enable_power_path(struct charger_device *chg_dev,
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
 
 	dev_dbg(mpci->dev, "%s: en = %d\n", __func__, en);
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	/* On SuperVOOC boards the external charger feeds the system */
+	if (is_mtksvooc_project)
+		en = false;
+#endif
 	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_CHG_CTRL1,
 					MT6360_MASK_FORCE_SLEEP, en ? 0 : 0xff);
 }
@@ -1547,8 +1579,23 @@ static int mt6360_enable_otg(struct charger_device *chg_dev, bool en)
 		dev_err(mpci->dev, "%s: set wdt fail, en = %d\n", __func__, en);
 		return ret;
 	}
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	ret = mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_CHG_CTRL1,
+					 MT6360_MASK_OPA_MODE, en ? 0xff : 0);
+	if (ret >= 0) {
+		struct power_supply *psy = power_supply_get_by_name("battery");
+
+		oplus_chg_set_otg_online(en);
+		if (psy) {
+			power_supply_changed(psy);
+			power_supply_put(psy);
+		}
+	}
+	return ret;
+#else
 	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_CHG_CTRL1,
 					  MT6360_MASK_OPA_MODE, en ? 0xff : 0);
+#endif
 }
 
 static int mt6360_enable_discharge(struct charger_device *chg_dev,
@@ -2847,7 +2894,12 @@ static int mt6360_set_shipping_mode(struct mt6360_pmu_chg_info *mpci)
 		goto out;
 	}
 
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	/* also set the 18s ship mode entry delay used by oplus boards */
+	data = 0xC0;
+#else
 	data = 0x80;
+#endif
 	/* enter shipping mode and disable cfo_en/chg_en */
 	ret = i2c_smbus_write_i2c_block_data(mpi->i2c,
 					     MT6360_PMU_CHG_CTRL2, 1, &data);
@@ -3034,6 +3086,10 @@ static int mt6360_pmu_chg_probe(struct platform_device *pdev)
 && !defined(CONFIG_TCPC_CLASS)
 	schedule_work(&mpci->chgdet_work);
 #endif /* CONFIG_MT6360_PMU_CHARGER_TYPE_DETECT && !CONFIG_TCPC_CLASS */
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	atomic_set(&mpci->suspended, 0);
+	oplus_mpci = mpci;
+#endif
 	dev_info(&pdev->dev, "%s: successfully probed\n", __func__);
 	return 0;
 err_shipping_mode_attr:
@@ -3054,6 +3110,9 @@ static int mt6360_pmu_chg_remove(struct platform_device *pdev)
 	struct mt6360_pmu_chg_info *mpci = platform_get_drvdata(pdev);
 
 	dev_dbg(mpci->dev, "%s\n", __func__);
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	oplus_mpci = NULL;
+#endif
 	flush_workqueue(mpci->pe_wq);
 	destroy_workqueue(mpci->pe_wq);
 	if (mpci->mivr_task) {
@@ -3071,13 +3130,183 @@ static int mt6360_pmu_chg_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+/* Helpers the oplus charger uses to drive the MT6360 directly */
+static struct mt6360_pmu_chg_info *mt6360_oplus_get(void)
+{
+	struct mt6360_pmu_chg_info *mpci = oplus_mpci;
+
+	if (!mpci) {
+		pr_err("%s: mt6360 charger not ready\n", __func__);
+		return NULL;
+	}
+	if (atomic_read(&mpci->suspended))
+		return NULL;
+	return mpci;
+}
+
+bool mt6360_get_vbus_status(void)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+	bool vbus_rising = false;
+
+	if (mpci)
+		mt6360_get_chrdet_ext_stat(mpci, &vbus_rising);
+	return vbus_rising;
+}
+EXPORT_SYMBOL(mt6360_get_vbus_status);
+
+int mt6360_get_vbus_rising(void)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+	bool vbus_rising = false;
+	int ret;
+
+	if (!oplus_mpci)
+		return 0;
+	if (!mpci)
+		return -EBUSY;
+	ret = mt6360_get_chrdet_ext_stat(mpci, &vbus_rising);
+	return ret < 0 ? ret : vbus_rising;
+}
+EXPORT_SYMBOL(mt6360_get_vbus_rising);
+
+int mt6360_chg_enable(bool en)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+
+	if (!mpci)
+		return 0;
+	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_CHG_CTRL2,
+					  MT6360_MASK_CHG_EN, en ? 0xff : 0);
+}
+EXPORT_SYMBOL(mt6360_chg_enable);
+
+int mt6360_check_charging_enable(void)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+	bool chg_enable = false;
+
+	if (!mpci)
+		return 0;
+	mt6360_is_charger_enabled(mpci, &chg_enable);
+	return chg_enable;
+}
+EXPORT_SYMBOL(mt6360_check_charging_enable);
+
+int mt6360_suspend_charger(bool suspend)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+
+	if (!mpci)
+		return -ENODEV;
+	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_CHG_CTRL1,
+					  MT6360_MASK_FORCE_SLEEP,
+					  suspend ? 0xff : 0);
+}
+EXPORT_SYMBOL(mt6360_suspend_charger);
+
+int mt6360_set_rechg_voltage(int rechg_mv)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+	u8 reg;
+
+	if (!mpci)
+		return -ENODEV;
+	if (rechg_mv < 150)
+		reg = 0x0;	/* 100mV */
+	else if (rechg_mv < 200)
+		reg = 0x1;	/* 150mV */
+	else if (rechg_mv < 250)
+		reg = 0x2;	/* 200mV */
+	else
+		reg = 0x3;	/* 250mV */
+	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_CHG_CTRL11,
+					  0x03, reg);
+}
+EXPORT_SYMBOL(mt6360_set_rechg_voltage);
+
+int mt6360_reset_charger(void)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+
+	if (!mpci)
+		return -ENODEV;
+	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_RST1,
+					  0x40, 0x40);
+}
+EXPORT_SYMBOL(mt6360_reset_charger);
+
+int mt6360_set_chging_term_disable(bool disable)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+
+	if (!mpci)
+		return -ENODEV;
+	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_CHG_CTRL9,
+					  0x08, disable ? 0 : 0x08);
+}
+EXPORT_SYMBOL(mt6360_set_chging_term_disable);
+
+int mt6360_aicl_enable(bool enable)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+
+	if (!mpci)
+		return -ENODEV;
+	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_CHG_CTRL6,
+					  0x1, enable ? 1 : 0);
+}
+EXPORT_SYMBOL(mt6360_aicl_enable);
+
+int mt6360_chg_enable_wdt(bool enable)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+
+	if (!mpci)
+		return -ENODEV;
+	return mt6360_enable_wdt(mpci, enable);
+}
+EXPORT_SYMBOL(mt6360_chg_enable_wdt);
+
+int mt6360_set_register(u8 addr, u8 mask, u8 data)
+{
+	struct mt6360_pmu_chg_info *mpci = mt6360_oplus_get();
+
+	if (!mpci)
+		return -ENODEV;
+	return mt6360_pmu_reg_update_bits(mpci->mpi, addr, mask, data);
+}
+EXPORT_SYMBOL(mt6360_set_register);
+
+int mt6360_enter_shipmode(void)
+{
+	if (!oplus_mpci)
+		return -ENODEV;
+	return mt6360_set_shipping_mode(oplus_mpci);
+}
+EXPORT_SYMBOL(mt6360_enter_shipmode);
+#endif /* CONFIG_OPLUS_CHARGER_MTK6785 */
+
 static int __maybe_unused mt6360_pmu_chg_suspend(struct device *dev)
 {
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	struct mt6360_pmu_chg_info *mpci = dev_get_drvdata(dev);
+
+	if (mpci)
+		atomic_set(&mpci->suspended, 1);
+#endif
 	return 0;
 }
 
 static int __maybe_unused mt6360_pmu_chg_resume(struct device *dev)
 {
+#ifdef CONFIG_OPLUS_CHARGER_MTK6785
+	struct mt6360_pmu_chg_info *mpci = dev_get_drvdata(dev);
+
+	if (mpci)
+		atomic_set(&mpci->suspended, 0);
+#endif
 	return 0;
 }
 
