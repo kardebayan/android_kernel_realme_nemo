@@ -28,6 +28,10 @@ else
     platform = $(subst ",,$(CONFIG_MTK_PLATFORM))
 endif
 
+ifeq ($(CONFIG_MTK_CCU_R_ABI),y)
+# Android R CCU driver (command queue interface, HAL loads the firmware)
+obj-y += mt6785_r/ 2.0_r/
+else
 obj-y += $(subst ",,$(platform))/
 
 $(warning CCU_MAKE_FILE_CALLED)
@@ -42,4 +46,5 @@ else ifneq (,$(filter $(platform),mt6771 mt6775 mt6785))
 else ifneq (,$(filter $(platform),mt6779))
     obj-y += 2.1/
     $(warning CCU_MAKE_FILE_CALLED_2_1)
+endif
 endif

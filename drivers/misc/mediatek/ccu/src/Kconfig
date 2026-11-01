@@ -6,3 +6,15 @@ config MTK_CCU
 	  Faster control flow and
 	  Stabler frame rate.
 
+config MTK_CCU_R_ABI
+	bool "Use the Android R CCU driver on MT6785"
+	depends on MTK_CCU && MACH_MT6785
+	help
+	  Build the MT6785 CCU driver of the Android R (kernel 4.14)
+	  release instead of the IPC based one. R 3A HALs
+	  (lib3a.ccudrv) drive /dev/ccu with the command queue ioctls
+	  (ENQUE/DEQUE/FLUSH_COMMAND, CCU_IOCTL_SET_RUN as _IO(c, 11),
+	  SET_WORK_BUF) and load the CCU firmware themselves; the 4.19
+	  driver replaced these with SET_RUN_INPUT, LOAD_CCU_BIN and
+	  IPC_* ioctls.
+
