@@ -5358,6 +5358,18 @@ int primary_display_get_lcm_index(void)
 	return index;
 }
 
+int primary_display_get_lcm_name(char *name, size_t len)
+{
+	if (pgc->plcm == NULL || pgc->plcm->drv == NULL ||
+	    pgc->plcm->drv->name == NULL) {
+		DISP_PR_ERR("lcm handle is null\n");
+		return -ENODEV;
+	}
+
+	strscpy(name, pgc->plcm->drv->name, len);
+	return 0;
+}
+
 static int check_switch_lcm_mode_for_debug(void)
 {
 	static enum LCM_DSI_MODE_CON vdo_mode_type;

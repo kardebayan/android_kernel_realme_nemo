@@ -1554,6 +1554,25 @@ int _ioctl_wait_fps_change(unsigned long arg)
 
 }
 
+static int _ioctl_get_lcm_module_info(unsigned long arg)
+{
+	void __user *argp = (void __user *)arg;
+	struct DISP_LCM_MODULE_INFO info;
+	int ret;
+
+	memset(&info, 0, sizeof(info));
+	ret = primary_display_get_lcm_name(info.name, sizeof(info.name));
+	if (ret)
+		return ret;
+
+	if (copy_to_user(argp, &info, sizeof(info))) {
+		DISP_PR_INFO("%s copy_to_user failed!\n", __func__);
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
 /*ToDo: ARR, add ioctl to replay supported dynamic fps to HWC*/
 /*think about the data structure to use*/
 int _ioctl_get_supported_fps(unsigned long arg)
@@ -1761,6 +1780,8 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return _ioctl_wait_touch_hint(arg);
 	case DISP_IOCTL_GET_SUPPORTED_FPS:
 		return _ioctl_get_supported_fps(arg);
+	case DISP_IOCTL_GET_LCM_MODULE_INFO:
+		return _ioctl_get_lcm_module_info(arg);
 #ifdef CONFIG_MTK_HIGH_FRAME_RATE
 	case DISP_IOCTL_GET_MULTI_CONFIGS:
 		return _ioctl_get_multi_configs(arg);

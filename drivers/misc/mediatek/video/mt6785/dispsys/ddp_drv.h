@@ -179,4 +179,12 @@ struct disp_iommu_device *disp_get_iommu_dev(void);
 #define DISP_IOCTL_SET_TPLAY_HANDLE \
 			_IOW(DISP_IOCTL_MAGIC, 200, unsigned int)
 
+/*panel driver name, used by userspace to pick panel specific PQ tables*/
+struct DISP_LCM_MODULE_INFO {
+	char name[128];
+};
+
+#define DISP_IOCTL_GET_LCM_MODULE_INFO \
+			_IOR(DISP_IOCTL_MAGIC, 236, struct DISP_LCM_MODULE_INFO)
+
 #endif /* __DDP_DRV_H__ */
