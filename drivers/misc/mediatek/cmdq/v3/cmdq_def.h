@@ -396,9 +396,6 @@ struct cmdqSecAddrMetadataStruct {
 	uint32_t offset;	/* [IN]_b, buffser offset to secure handle */
 	uint32_t size;		/* buffer size */
 	uint32_t port;		/* hw port id (i.e. M4U port id) */
-	uint32_t sec_id;
-	uint32_t useSecIdinMeta;
-	int32_t ionFd;
 };
 
 struct cmdqMetaBuf {

@@ -37,7 +37,6 @@
 #include "mdp_ioctl_ex.h"
 #include "cmdq_struct.h"
 #include "mdp_m4u.h"
-#include "ion_sec_heap.h"
 
 #define MDP_TASK_PAENDING_TIME_MAX	100000000
 
@@ -557,91 +556,6 @@ static s32 cmdq_mdp_handle_setup(struct mdp_submit *user_job,
 	return 0;
 }
 
-static s32 mdp_init_secure_id(struct cmdqRecStruct *handle)
-{
-#ifdef CMDQ_SECURE_PATH_SUPPORT
-	u32 i;
-	uint32_t trustmem_type = 0;
-	int sec = 0;
-	int iommu_sec_id = 0;
-	ion_phys_addr_t sec_handle;
-	struct cmdqSecAddrMetadataStruct *secMetadatas = NULL;
-
-	if (!handle->secData.is_secure)
-		return 0;
-	secMetadatas = (struct cmdqSecAddrMetadataStruct *)handle->secData.addrMetadatas;
-	for (i = 0; i < handle->secData.addrMetadataCount; i++) {
-		secMetadatas[i].useSecIdinMeta = 1;
-		if (secMetadatas[i].ionFd <= 0) {
-			secMetadatas[i].sec_id = 0;
-#ifdef MDP_M4U_TEE_SUPPORT
-			// if camera scenario and type is DP_SECURE, set sec id as MEM_2D_FR
-			if ((handle->engineFlag & ((1LL << CMDQ_ENG_MDP_CAMIN)
-			| CMDQ_ENG_ISP_GROUP_BITS))
-			&& secMetadatas[i].type == CMDQ_SAM_H_2_MVA) {
-				secMetadatas[i].sec_id = 3;
-				CMDQ_LOG("%s,port:%d,ionFd:%d,sec_id:%d,sec_handle:0x%#llx",
-						__func__, secMetadatas[i].port,
-						secMetadatas[i].ionFd,
-						secMetadatas[i].sec_id,
-						secMetadatas[i].baseHandle);
-			}
-#endif
-			continue;
-		}
-
-		trustmem_type = ion_fd2sec_type(secMetadatas[i].ionFd, &sec,
-			&iommu_sec_id, &sec_handle);
-		secMetadatas[i].baseHandle = (uint64_t)sec_handle;
-#ifdef CONFIG_MTK_CMDQ_MBOX_EXT
-		secMetadatas[i].sec_id = iommu_sec_id;
-#else
-		secMetadatas[i].sec_id = trustmem_type;
-#endif
-		CMDQ_MSG("%s,port:%d,ionFd:%d,sec_id:%d,sec_handle:0x%#llx",
-				__func__, secMetadatas[i].port,
-				secMetadatas[i].ionFd,
-				secMetadatas[i].sec_id,
-				secMetadatas[i].baseHandle);
-	}
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
-static s32 mdp_init_secure_id_in_house(struct cmdqRecStruct *handle)
-{
-	u32 i;
-	ion_phys_addr_t sec_handle;
-	struct cmdqSecAddrMetadataStruct *secMetadatas = NULL;
-
-	if (!handle->secData.is_secure)
-		return 0;
-	secMetadatas = (struct cmdqSecAddrMetadataStruct *)handle->secData.addrMetadatas;
-
-	for (i = 0; i < handle->secData.addrMetadataCount; i++) {
-		secMetadatas[i].useSecIdinMeta = 1;
-		if (secMetadatas[i].ionFd <= 0) {
-			secMetadatas[i].sec_id = 0;
-			continue;
-		}
-
-		mdp_ion_import_sec_handle(secMetadatas[i].ionFd, &sec_handle);
-		secMetadatas[i].baseHandle = (uint64_t)sec_handle;
-
-		CMDQ_MSG("%s,port:%d,ionFd:%d,sec_id:%d,sec_handle:0x%#llx",
-				__func__, secMetadatas[i].port,
-				secMetadatas[i].ionFd,
-				secMetadatas[i].sec_id,
-				secMetadatas[i].baseHandle);
-	}
-	return 1;
-}
-#endif
-
-
 static int mdp_implement_read_v1(struct mdp_submit *user_job,
 				struct cmdqRecStruct *handle,
 				struct cmdq_command_buffer *cmd_buf)
@@ -791,12 +705,6 @@ s32 mdp_ioctl_async_exec(struct file *pf, unsigned long param)
 		kfree(cmd_buf.va_base);
 		goto done;
 	}
-
-	mdp_init_secure_id(handle);
-
-#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
-	mdp_init_secure_id_in_house(handle);
-#endif
 
 	/* Make command from user job */
 	CMDQ_TRACE_FORCE_BEGIN("mdp_translate_user_job\n");

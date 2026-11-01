@@ -669,8 +669,6 @@ s32 cmdq_append_addr_metadata(struct cmdqRecStruct *handle,
 		pAddrs[index].size = pMetadata->size;
 		pAddrs[index].port = pMetadata->port;
 		pAddrs[index].type = pMetadata->type;
-		pAddrs[index].useSecIdinMeta = pMetadata->useSecIdinMeta;
-		pAddrs[index].sec_id = pMetadata->sec_id;
 
 		/* meatadata count ++ */
 		handle->secData.addrMetadataCount += 1;
@@ -1405,11 +1403,6 @@ s32 cmdq_op_write_reg_secure(struct cmdqRecStruct *handle, u32 addr,
 	metadata.offset = offset;
 	metadata.size = size;
 	metadata.port = port;
-	metadata.useSecIdinMeta = 1;
-	metadata.sec_id = sec_id;
-	CMDQ_LOG("%s,port:%d,useSecIdinMeta:%d,sec_id:%d,baseHandle:%llu,handle:%p",
-		__func__, metadata.port, metadata.useSecIdinMeta, metadata.sec_id,
-		baseHandle, handle);
 
 	status = cmdq_append_addr_metadata(handle, &metadata);
 
