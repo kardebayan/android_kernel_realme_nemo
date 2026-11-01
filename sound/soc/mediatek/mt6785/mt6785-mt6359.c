@@ -16,6 +16,9 @@
 #include "mt6785-afe-gpio.h"
 #include "../../codecs/mt6359.h"
 #include "../common/mtk-sp-spk-amp.h"
+#ifdef CONFIG_SND_SOC_SIA81XX
+#include "../sia81xx/sia81xx_aux_dev_if.h"
+#endif
 
 #ifdef CONFIG_SND_SOC_MT8185_EVB
 #include <linux/of_gpio.h>
@@ -1577,6 +1580,12 @@ static int mt6785_mt6359_dev_probe(struct platform_device *pdev)
 	card->num_configs += cirrus_prince_devs;
 	card->codec_conf = mt_prince_codec_conf;
 
+#endif
+#ifdef CONFIG_SND_SOC_SIA81XX
+	ret = soc_aux_init_only_sia81xx(pdev, card);
+	if (ret)
+		dev_err(&pdev->dev, "%s soc_aux_init_only_sia81xx fail %d\n",
+			__func__, ret);
 #endif
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 	if (ret)
