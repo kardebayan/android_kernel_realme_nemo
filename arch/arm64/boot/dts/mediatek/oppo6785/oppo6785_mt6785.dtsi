@@ -4,6 +4,9 @@
  * shared by all oppo6785 projects.
  */
 
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
 &btcvsd {
 	disable_write_silence = <1>;
 };
@@ -44,3 +47,23 @@
 &charger {
 	pd_vbus_upper_bound = <12000000>;
 };
+
+/*
+ * Volume up is the PMIC home key (kpd-sw-rstkey), volume down is wired
+ * to GPIO60 instead of the keypad matrix.
+ */
+&odm {
+	gpio_keys: gpio-keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&volume_down_gpio_eint>;
+
+		volume-down {
+			label = "volume_down";
+			gpios = <&pio 60 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_VOLUMEDOWN>;
+			debounce-interval = <32>;
+		};
+	};
+};
+
