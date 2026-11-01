@@ -1,0 +1,9 @@
+config OPLUS_FEATURE_SENSOR_ALGORITHM
+	bool "OPLUS algorithm sensors"
+	depends on OPLUS_FEATURE_SENSOR
+	help
+	  Support the oplus algorithm sensors computed by the SCP firmware
+	  (camera protect, free fall, pick up, fingerprint display, lux
+	  AOD, pedometer minute, touch gesture...). This extends the hub
+	  sensor type table with types 73-83 and their event payloads,
+	  as used by the oplus firmware.

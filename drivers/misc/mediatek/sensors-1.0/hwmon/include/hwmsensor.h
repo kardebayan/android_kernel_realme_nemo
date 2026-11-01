@@ -11,6 +11,10 @@
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR_ALGORITHM
+/* oplus algorithm sensors run by the SCP firmware, types 73-83 */
+#include "opposensor.h"
+#endif
 /* follow google default sensor type */
 #define SENSOR_TYPE_ACCELEROMETER                      1
 #define SENSOR_TYPE_MAGNETIC_FIELD                     2
@@ -68,8 +72,10 @@
 #define SENSOR_TYPE_RGBW                               70
 #define SENSOR_TYPE_GYRO_TEMPERATURE                   71
 #define SENSOR_TYPE_SAR                                72
+#ifndef CONFIG_OPLUS_FEATURE_SENSOR_ALGORITHM
 /* end sensor type */
 #define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_SAR
+#endif
 #define SENSOR_TYPE_MAX_NUM_PLUS_ONE                   (SENSOR_TYPE_MAX_NUM + 1)
 
 /*---------------------------------------------------------------------------*/
@@ -142,7 +148,9 @@
 #define ID_GYRO_TEMPERATURE     (ID_BASE + SENSOR_TYPE_GYRO_TEMPERATURE - 1)
 #define ID_SAR                  (ID_BASE + SENSOR_TYPE_SAR - 1)
 /* end sensor ID */
+#ifndef CONFIG_OPLUS_FEATURE_SENSOR_ALGORITHM
 #define ID_SENSOR_MAX_HANDLE    (ID_SAR)
+#endif
 #define ID_SENSOR_MAX_HANDLE_PLUS_ONE    (ID_SENSOR_MAX_HANDLE + 1)
 
 #if (ID_SENSOR_MAX_HANDLE_PLUS_ONE != SENSOR_TYPE_MAX_NUM)

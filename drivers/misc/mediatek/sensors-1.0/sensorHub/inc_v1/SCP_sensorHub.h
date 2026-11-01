@@ -9,6 +9,9 @@
 #include <linux/ioctl.h>
 #include <linux/atomic.h>
 #include <linux/init.h>
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR_ALGORITHM
+#include <opposensor.h>
+#endif
 
 #if defined(CONFIG_MTK_SCP_SENSORHUB_V1)
 #error CONFIG_MTK_SCP_SENSORHUB_V1 should not configed
@@ -258,6 +261,9 @@ struct data_unit_t {
 		struct geofence_event_t geofence_data_t;
 		struct sar_event_t sar_event;
 		int32_t data[8];
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR_ALGORITHM
+		union oppo_data_unit_t oppo_data_t;
+#endif
 	};
 } __packed;
 
