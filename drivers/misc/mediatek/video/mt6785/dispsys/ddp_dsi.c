@@ -5494,6 +5494,22 @@ long lcd_enp_bias_setting(unsigned int value)
 	return ret;
 }
 
+static void lcd_bias_enp_setting(unsigned int value)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	disp_dts_gpio_select_state(value ? DTS_GPIO_STATE_LCD_BIAS_ENP1 :
+				   DTS_GPIO_STATE_LCD_BIAS_ENP0);
+#endif
+}
+
+static void lcd_bias_enn_setting(unsigned int value)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	disp_dts_gpio_select_state(value ? DTS_GPIO_STATE_LCD_BIAS_ENN1 :
+				   DTS_GPIO_STATE_LCD_BIAS_ENN0);
+#endif
+}
+
 int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 			  struct LCM_DRIVER *lcm_drv)
 {
@@ -5580,6 +5596,8 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 #endif
 #else
 	utils->set_gpio_lcd_enp_bias = lcd_enp_bias_setting;
+	utils->set_gpio_lcd_bias_enp = lcd_bias_enp_setting;
+	utils->set_gpio_lcd_bias_enn = lcd_bias_enn_setting;
 #endif
 #ifdef CONFIG_MTK_HIGH_FRAME_RATE
 	utils->dsi_dynfps_send_cmd = DSI_dynfps_send_cmd;
