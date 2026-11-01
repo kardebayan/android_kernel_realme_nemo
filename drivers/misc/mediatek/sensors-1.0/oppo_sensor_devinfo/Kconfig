@@ -1,0 +1,10 @@
+config OPLUS_FEATURE_SENSOR
+	bool "OPLUS sensor hub extensions"
+	depends on CUSTOM_KERNEL_SENSORHUB && NANOHUB && OF_FLATTREE
+	help
+	  Support the oplus additions to the SCP sensor hub: sensor
+	  device info and factory calibration handling (loaded from the
+	  oppo_custom partition and pushed to the SCP), the private
+	  firmware requests, and the /proc/oplusSensorFeature and
+	  /proc/sensor nodes and calibration interfaces used by the
+	  oplus vendor sensor HAL and libraries.

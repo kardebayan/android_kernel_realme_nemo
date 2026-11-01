@@ -746,8 +746,18 @@ static void SCP_sensorHub_IPI_handler(int id,
 	cmd = SCP_sensorHub_find_cmd(rsp->rsp.action);
 	if (cmd != NULL)
 		cmd->handler(rsp, len);
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	/*
+	 * The oplus firmware answers the oplus private requests
+	 * (OPPO_ACTION_*) with their own action codes, which are not
+	 * in the table above: hand them to the pending request.
+	 */
+	else
+		SCP_sensorHub_xcmd_putdata(rsp, len);
+#else
 	else
 		pr_err("cannot find cmd!\n");
+#endif
 }
 
 static void SCP_sensorHub_init_sensor_state(void)
