@@ -10,6 +10,9 @@
 struct alsps_context *alsps_context_obj /* = NULL*/;
 struct platform_device *pltfm_dev;
 int last_als_report_data = -1;
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+static int als_cali_data;
+#endif
 
 /* AAL default delay timer(nano seconds)*/
 #define AAL_DELAY 200000000
@@ -35,7 +38,9 @@ int als_data_report_t(int value, int status, int64_t time_stamp)
 		err = sensor_input_event(cxt->als_mdev.minor, &event);
 		cxt->is_get_valid_als_data_after_enable = true;
 	}
-	if (value != last_als_report_data) {
+	/* the oplus HAL expects every sample, repeated values included */
+	if (IS_ENABLED(CONFIG_OPLUS_FEATURE_SENSOR) ||
+	    value != last_als_report_data) {
 		event.handle = ID_LIGHT;
 		event.flush_action = DATA_ACTION;
 		event.word[0] = value;
@@ -113,6 +118,10 @@ int rgbw_flush_report(void)
 	return err;
 }
 
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+extern uint32_t prox_report_count;
+#endif
+
 int ps_data_report_t(int value, int status, int64_t time_stamp)
 {
 	int err = 0;
@@ -124,6 +133,9 @@ int ps_data_report_t(int value, int status, int64_t time_stamp)
 	event.flush_action = DATA_ACTION;
 	event.time_stamp = time_stamp;
 	event.word[0] = value + 1;
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	event.word[1] = prox_report_count;
+#endif
 	event.status = status;
 	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
 	return err;
@@ -506,8 +518,10 @@ static ssize_t alsbatch_store(struct device *dev,
 {
 	struct alsps_context *cxt = alsps_context_obj;
 	int handle = 0, flag = 0, err = 0;
+#ifndef CONFIG_OPLUS_FEATURE_SENSOR
 	int64_t delay_ns = 0;
 	int64_t latency_ns = 0;
+#endif
 
 	pr_debug("%s %s\n", __func__, buf);
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &cxt->als_delay_ns,
@@ -529,8 +543,14 @@ static ssize_t alsbatch_store(struct device *dev,
 		err = als_enable_and_batch();
 #endif
 	} else if (handle == ID_RGBW) {
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+		/* batch RGBW at the rate parsed from the request */
+		cxt->rgbw_delay_ns = cxt->als_delay_ns;
+		cxt->rgbw_latency_ns = cxt->als_latency_ns;
+#else
 		cxt->rgbw_delay_ns = delay_ns;
 		cxt->rgbw_latency_ns = latency_ns;
+#endif
 #if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_ALSPSHUB)
 		if (cxt->als_ctl.is_support_batch)
 			err = cxt->als_ctl.rgbw_batch(0, cxt->rgbw_delay_ns,
@@ -601,6 +621,14 @@ static ssize_t alsdevnum_show(struct device *dev,
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+static ssize_t alscali_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", als_cali_data);
+}
+#endif
+
 static ssize_t alscali_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -612,6 +640,10 @@ static ssize_t alscali_store(struct device *dev,
 	if (!cali_buf)
 		return -ENOMEM;
 	memcpy(cali_buf, buf, count);
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	if (count >= sizeof(int))
+		als_cali_data = *(int *)cali_buf;
+#endif
 
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 	cxt = alsps_context_obj;
@@ -980,7 +1012,11 @@ DEVICE_ATTR_RW(alsactive);
 DEVICE_ATTR_RW(alsbatch);
 DEVICE_ATTR_RW(alsflush);
 DEVICE_ATTR_RO(alsdevnum);
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+DEVICE_ATTR_RW(alscali);
+#else
 DEVICE_ATTR_WO(alscali);
+#endif
 DEVICE_ATTR_RW(psactive);
 DEVICE_ATTR_RW(psbatch);
 DEVICE_ATTR_RW(psflush);

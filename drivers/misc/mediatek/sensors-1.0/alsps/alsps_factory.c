@@ -35,6 +35,10 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 	uint32_t enable = 0;
 	int threshold_data[2] = {0, 0};
 	int als_cali = 0;
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+	/* oplus PS/ALS calibration: ps0/ps1 offset, value, delta */
+	int32_t data_buf[6] = {0};
+#endif
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg,
@@ -216,11 +220,20 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 		}
 		return 0;
 	case ALSPS_IOCTL_SET_CALI:
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+		if (copy_from_user(data_buf, ptr, sizeof(data_buf)))
+			return -EFAULT;
+#else
 		if (copy_from_user(&data, ptr, sizeof(data)))
 			return -EFAULT;
+#endif
 		if (alsps_factory.fops != NULL &&
 		    alsps_factory.fops->ps_set_cali != NULL) {
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+			err = alsps_factory.fops->ps_set_cali(data_buf);
+#else
 			err = alsps_factory.fops->ps_set_cali(data);
+#endif
 			if (err < 0) {
 				pr_err("ALSPS_IOCTL_SET_CALI fail!\n");
 				return -EINVAL;
@@ -233,7 +246,11 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 	case ALSPS_IOCTL_GET_CALI:
 		if (alsps_factory.fops != NULL &&
 		    alsps_factory.fops->ps_get_cali != NULL) {
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+			err = alsps_factory.fops->ps_get_cali(data_buf);
+#else
 			err = alsps_factory.fops->ps_get_cali(&data);
+#endif
 			if (err < 0) {
 				pr_err("ALSPS_IOCTL_GET_CALI FAIL!\n");
 				return -EINVAL;
@@ -242,13 +259,22 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 			pr_err("ALSPS_IOCTL_GET_CALI NULL\n");
 			return -EINVAL;
 		}
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+		if (copy_to_user(ptr, data_buf, sizeof(data_buf)))
+			return -EFAULT;
+#else
 		if (copy_to_user(ptr, &data, sizeof(data)))
 			return -EFAULT;
+#endif
 		return 0;
 	case ALSPS_IOCTL_ALS_GET_CALI:
 		if (alsps_factory.fops != NULL &&
 			alsps_factory.fops->als_get_cali != NULL) {
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+			err = alsps_factory.fops->als_get_cali(data_buf);
+#else
 			err = alsps_factory.fops->als_get_cali(&data);
+#endif
 			if (err < 0) {
 				pr_err("ALSPS_IOCTL_ALS_GET_CALI FAIL!\n");
 				return -EINVAL;
@@ -257,8 +283,13 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 			pr_err("ALSPS_IOCTL_ALS_GET_CALI NULL\n");
 			return -EINVAL;
 		}
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR
+		if (copy_to_user(ptr, data_buf, sizeof(data_buf)))
+			return -EFAULT;
+#else
 		if (copy_to_user(ptr, &data, sizeof(data)))
 			return -EFAULT;
+#endif
 		return 0;
 	case ALSPS_IOCTL_CLR_CALI:
 		if (copy_from_user(&data, ptr, sizeof(data)))
