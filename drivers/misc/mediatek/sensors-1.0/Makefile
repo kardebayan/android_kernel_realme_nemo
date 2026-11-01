@@ -19,6 +19,7 @@ obj-$(CONFIG_CUSTOM_KERNEL_SIGNIFICANT_MOTION_SENSOR) += step_counter/
 obj-$(CONFIG_CUSTOM_KERNEL_SITUATION) += situation/
 obj-$(CONFIG_CUSTOM_KERNEL_SENSOR_FUSION) += sensorfusion/
 obj-$(CONFIG_OPLUS_FEATURE_SENSOR) += oppo_sensor_devinfo/
+obj-$(CONFIG_OPLUS_FEATURE_SENSOR_ALGORITHM) += oppo_virtual_sensor/
 else
 obj-y += dummy.o
 endif

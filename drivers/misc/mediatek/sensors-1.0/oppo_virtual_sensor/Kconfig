@@ -7,3 +7,28 @@ config OPLUS_FEATURE_SENSOR_ALGORITHM
 	  AOD, pedometer minute, touch gesture...). This extends the hub
 	  sensor type table with types 73-83 and their event payloads,
 	  as used by the oplus firmware.
+
+if OPLUS_FEATURE_SENSOR_ALGORITHM
+
+config OPLUS_FEATURE_CAMERA_PROTECT
+	bool "Camera protect sensor"
+
+config OPLUS_FEATURE_FREE_FALL
+	bool "Free fall sensor"
+
+config OPLUS_FEATURE_PICKUP_DETECT
+	bool "Pick up detect sensor"
+
+config OPLUS_FEATURE_FP_DISPLAY
+	bool "Fingerprint display sensor"
+
+config OPLUS_FEATURE_LUX_AOD
+	bool "Lux AOD sensor"
+
+config OPLUS_FEATURE_PEDO_MINUTE
+	bool "Pedometer minute sensor"
+
+config OPLUS_FEATURE_TP_GESTURE
+	bool "Touch gesture sensor"
+
+endif

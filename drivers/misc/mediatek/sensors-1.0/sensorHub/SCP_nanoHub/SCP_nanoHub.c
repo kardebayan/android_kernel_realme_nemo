@@ -65,6 +65,10 @@
 
 #define CHRE_POWER_RESET_NOTIFY
 
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR_ALGORITHM
+/* registers the oplus algorithm sensors, in oppo_virtual_sensor */
+void oppo_init_sensor_state(struct SensorState *mSensorState);
+#endif
 static int sensor_send_timestamp_to_hub(void);
 static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp);
 static int SCP_sensorHub_init_flag = -1;
@@ -917,6 +921,9 @@ static void SCP_sensorHub_init_sensor_state(void)
 
 	mSensorState[SENSOR_TYPE_SAR].sensorType = SENSOR_TYPE_SAR;
 	mSensorState[SENSOR_TYPE_SAR].timestamp_filter = false;
+#ifdef CONFIG_OPLUS_FEATURE_SENSOR_ALGORITHM
+	oppo_init_sensor_state(mSensorState);
+#endif
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd,
