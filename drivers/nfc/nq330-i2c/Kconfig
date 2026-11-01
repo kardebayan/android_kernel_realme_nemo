@@ -1,0 +1,7 @@
+config NFC_PN553_DEVICES
+	bool "NXP NQ3xx (PN553 family) NCI protocol driver (I2C) devices"
+	depends on I2C && OPPO_NFC
+	help
+	  Character device driver (/dev/pn553) for NXP NQ310/NQ330 NFC
+	  controllers, used by the NXP NFC HAL. Probes only when the
+	  project's NFC chipset (OPPO_NFC) is one of them.

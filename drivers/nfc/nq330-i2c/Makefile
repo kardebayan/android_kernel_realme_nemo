@@ -1,0 +1,1 @@
+obj-$(CONFIG_NFC_PN553_DEVICES) += nq330.o
