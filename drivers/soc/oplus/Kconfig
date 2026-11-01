@@ -17,4 +17,12 @@ config OPPO_DEVICE_IFNO
 	  Provides /proc/devinfo, where drivers register the name and
 	  vendor of the hardware components they detected.
 
+config OPPO_NFC
+	bool "OPLUS NFC chipset info"
+	depends on OPLUS_FEATURE_OPROJECT
+	help
+	  Exposes the NFC chipset fitted to this project/operator variant,
+	  as described by the oppo-nfc-chipset device tree node, through
+	  /proc/oppo_nfc/chipset.
+
 endmenu
