@@ -614,4 +614,26 @@ void KD_IMGSENSOR_PROFILE_I2C(char *tag, int trans_num);
 
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)
+/* oplus (realme nemo family) sensors */
+#define IMX682_SENSOR_ID                         0x0682
+#define SENSOR_DRVNAME_IMX682_MIPI_RAW           "imx682_mipi_raw"
+#define S5KGM1SP_SENSOR_ID                       0x08D1
+#define SENSOR_DRVNAME_S5KGM1SP_MIPI_RAW         "s5kgm1sp_mipi_raw"
+#define SALAA_QTECH_MAIN_S5KGM1SP_SENSOR_ID      0x08D5
+#define SENSOR_DRVNAME_SALAA_QTECH_MAIN_S5KGM1SP "salaa_qtech_main_s5kgm1sp"
+#define SARTER_QTECH_MAIN_S5KGM1SP_SENSOR_ID     0x08D6
+#define SENSOR_DRVNAME_SARTER_QTECH_MAIN_S5KGM1SP "sarter_qtech_main_s5kgm1sp"
+#define IMX471_SENSOR_ID1                        0x0471
+#define SENSOR_DRVNAME_IMX471_MIPI_RAW1          "imx471_mipi_raw1"
+#define OV02B1B_SENSOR_ID                        0x002c
+#define SENSOR_DRVNAME_OV02B1B_MIPI_MONO         "ov02b1b_mipi_mono"
+#define SALA_WIDE_OV8856_SENSOR_ID               0x8856
+#define SENSOR_DRVNAME_SALA_WIDE_OV8856          "sala_wide_ov8856"
+#define S5KGW1_SENSOR_ID                         0x0971
+#define SENSOR_DRVNAME_S5KGW1_MIPI_RAW           "s5kgw1_mipi_raw"
+#define GC2375H_SENSOR_ID_19661                  0x2376
+#define SENSOR_DRVNAME_GC2375H_MIPI_RAW_19661    "gc2375h_mipi_raw_19661"
+#define SENSOR_DRVNAME_GC02K0_MIPI_RAW           "gc02k0_mipi_raw"
+#define SENSOR_DRVNAME_GC02M0_MIPI_MONO          "gc02m0_mipi_mono"
+
 #endif              /* _KD_IMGSENSOR_H */
