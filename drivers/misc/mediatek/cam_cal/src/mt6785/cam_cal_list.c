@@ -11,8 +11,25 @@
 #define IMX586_MAX_EEPROM_SIZE 0x24D0
 #define OV8856_MAX_EEPROM_SIZE 0x8000
 #define S5K4H7_MAX_EEPROM_SIZE 0x8000
+#define MAX_EEPROM_SIZE_16K 0x4000
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
+#ifdef CONFIG_OPLUS_IMGSENSOR
+	/* realme nemo family, must precede the common entries */
+	{IMX682_SENSOR_ID, 0xA0, Common_read_region},
+	{S5KGM1SP_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{SALAA_QTECH_MAIN_S5KGM1SP_SENSOR_ID, 0xA0, Common_read_region,
+		MAX_EEPROM_SIZE_16K},
+	{IMX471_SENSOR_ID1, 0xA8, Common_read_region},
+	{OV8856_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{OV02B10_SENSOR_ID, 0xA4, Common_read_region},
+	{S5KGW1_SENSOR_ID, 0xA0, Common_read_region},
+	{S5K3P9SP_SENSOR_ID, 0xA8, Common_read_region},
+	{GC2375H_SENSOR_ID_19661, 0xA4, Common_read_region},
+	{GC02K0_SENSOR_ID, 0xA4, Common_read_region},
+	{SARTER_QTECH_MAIN_S5KGM1SP_SENSOR_ID, 0xA0, Common_read_region,
+		MAX_EEPROM_SIZE_16K},
+#endif
 	/*Below is commom sensor */
 	{IMX519_SENSOR_ID, 0xA0, Common_read_region},
 	{S5K2T7SP_SENSOR_ID, 0xA4, Common_read_region},
