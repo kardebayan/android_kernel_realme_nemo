@@ -1,0 +1,21 @@
+menuconfig OPPO_FINGERPRINT
+	bool "OPLUS fingerprint"
+	depends on SPI_MASTER
+	help
+	  Say Y here to enable OPLUS fingerprint support.
+
+if OPPO_FINGERPRINT
+
+config OPPO_FINGERPRINT_MTK
+	bool "Fingerprint on MediaTek platforms"
+	default y
+
+config OPPO_FINGERPRINT_FPC
+	bool "FPC capacitive fingerprint sensors (TEE)"
+	depends on OPPO_FINGERPRINT_MTK
+
+config OPPO_FINGERPRINT_GOODIX
+	bool "Goodix capacitive fingerprint sensors (TEE)"
+	depends on OPPO_FINGERPRINT_MTK && TRUSTONIC_TEE_SUPPORT
+
+endif # OPPO_FINGERPRINT
