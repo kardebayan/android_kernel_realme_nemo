@@ -25,4 +25,12 @@ config OPPO_NFC
 	  as described by the oppo-nfc-chipset device tree node, through
 	  /proc/oppo_nfc/chipset.
 
+config OPPO_CUSTOM
+	bool "OPLUS oppo_custom partition interface"
+	help
+	  Mirrors the oppo_custom partition, which holds the factory sensor
+	  calibration among other settings, and exposes it under
+	  /proc/oppoCustom. The vendor sensor calibration libraries read
+	  and write the calibration through /proc/oppoCustom/Sensor.
+
 endmenu
