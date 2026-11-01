@@ -147,6 +147,15 @@ static int mt6785_spk_i2s_in_type_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#ifdef CONFIG_SND_SOC_AW87339_PA
+extern unsigned char aw87339_audio_kspk(void);
+extern unsigned char aw87339_audio_off(void);
+#endif
+#ifdef CONFIG_SND_SOC_AW87359_PA
+extern unsigned char aw87359_audio_dspk(void);
+extern unsigned char aw87359_audio_off(void);
+#endif
+
 static int mt6785_mt6359_spk_amp_event(struct snd_soc_dapm_widget *w,
 				       struct snd_kcontrol *kcontrol,
 				       int event)
@@ -159,9 +168,21 @@ static int mt6785_mt6359_spk_amp_event(struct snd_soc_dapm_widget *w,
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
 		/* spk amp on control */
+#ifdef CONFIG_SND_SOC_AW87339_PA
+		aw87339_audio_kspk();
+#endif
+#ifdef CONFIG_SND_SOC_AW87359_PA
+		aw87359_audio_dspk();
+#endif
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
 		/* spk amp off control */
+#ifdef CONFIG_SND_SOC_AW87339_PA
+		aw87339_audio_off();
+#endif
+#ifdef CONFIG_SND_SOC_AW87359_PA
+		aw87359_audio_off();
+#endif
 		break;
 	default:
 		break;
