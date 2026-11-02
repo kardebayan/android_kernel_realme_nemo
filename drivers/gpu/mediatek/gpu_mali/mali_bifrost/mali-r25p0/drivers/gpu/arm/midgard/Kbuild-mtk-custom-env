@@ -36,6 +36,12 @@ ccflags-$(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT) += -DENABLE_COMMON_DVFS
 #$(info *GPU defined GPU BM QoS 2.0)
 #endif
 
+# The MT6785 userspace driver passes atoms with the GPU BM 2.0 frame_nr
+# field, keep the atom layout compatible even without GPU BM 2.0.
+ifneq (, $(findstring $(CONFIG_MTK_PLATFORM), "mt6785"))
+ccflags-y += -DMTK_GPU_ATOM_FRAME_NR
+endif
+
 ifneq (, $(findstring $(CONFIG_MTK_PLATFORM), "mt6771"))
 ccflags-y += -DENABLE_MTK_DEBUG
 $(info *GPU defined ENABLE_MTK_DEBUG)
