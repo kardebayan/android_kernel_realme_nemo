@@ -333,11 +333,17 @@ static long adsp_driver_ioctl(
 			break;
 		}
 
+#if !IS_ENABLED(CONFIG_MTK_AUDIODSP_LEGACY)
+		/*
+		 * Legacy audio HALs register SYSTEM_FEATURE_ID themselves to
+		 * keep the DSP awake, so only block it for newer HALs.
+		 */
 		if (t.cmd0.fid == SYSTEM_FEATURE_ID) {
 			pr_debug("%s(), reg/dreg SYSTEM_FEATURE_ID is not permitted!\n", __func__);
 			ret = -EPERM;
 			break;
 		}
+#endif
 
 		if (t.cmd0.enable)
 			ret = adsp_register_feature(t.cmd0.fid);
