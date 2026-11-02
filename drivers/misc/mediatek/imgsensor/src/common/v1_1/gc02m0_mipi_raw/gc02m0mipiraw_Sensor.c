@@ -799,7 +799,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 		write_cmos_sensor(0xfe, 0x01);
 		write_cmos_sensor(0x8c, 0x11);
 	} else {
-		write_cmos_sensor(0xfe, 0x10);
+		write_cmos_sensor(0xfe, 0x01);
 		write_cmos_sensor(0x8c, 0x10);
 	}
 	spin_lock(&imgsensor_drv_lock);
