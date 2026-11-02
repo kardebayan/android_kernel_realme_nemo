@@ -746,7 +746,7 @@
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO60__FUNC_GPIO60>;
 			slew-rate = <0>;  /*direction 0:in, 1:out*/
-			bias-pull-up = <01>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
 			input-enable;
 		};
 	};
