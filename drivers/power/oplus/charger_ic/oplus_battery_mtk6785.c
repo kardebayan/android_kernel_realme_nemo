@@ -4196,7 +4196,7 @@ int mt_get_chargerid_volt(void)
         }
 
 	if (is_support_chargerid_check() == true) {
-		rc = iio_read_channel_processed(pinfo->charger_id_chan, &chargerid_volt);
+		rc = iio_read_channel_raw(pinfo->charger_id_chan, &chargerid_volt);
 		if (rc < 0) {
 			chg_err("read charger_id_chan fail, rc=%d\n", rc);
 			return 0;
@@ -4786,14 +4786,14 @@ void oplus_get_usbtemp_volt(struct oplus_chg_chip *chip)
                 return;
 	}
 
-	rc = iio_read_channel_processed(pinfo->usb_temp_v_l_chan, &usbtemp_volt);
+	rc = iio_read_channel_raw(pinfo->usb_temp_v_l_chan, &usbtemp_volt);
         if (rc < 0) {
                 chg_err("read usb_temp_v_l_chan volt failed, rc=%d\n", rc);
         }
 
 	chip->usbtemp_volt_l = usbtemp_volt * 1500 / 4096;
 
-        rc = iio_read_channel_processed(pinfo->usb_temp_v_r_chan, &usbtemp_volt);
+        rc = iio_read_channel_raw(pinfo->usb_temp_v_r_chan, &usbtemp_volt);
         if (rc < 0) {
                 chg_err("read usb_temp_v_r_chan volt failed, rc=%d\n", rc);
         }
