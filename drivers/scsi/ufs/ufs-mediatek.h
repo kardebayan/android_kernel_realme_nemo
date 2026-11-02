@@ -93,6 +93,15 @@ enum {
 #define UFS_MTK_SIP_REF_CLK_NOTIFICATION  BIT(3)
 
 /*
+ * Legacy HW FDE/FBE control SiP call, used by older ATF builds that do
+ * not implement MTK_SIP_UFS_CONTROL. BIT(2) restores and enables the
+ * vendor crypto engine.
+ */
+#define MTK_SIP_KERNEL_HW_FDE_UFS_CTL_LEGACY \
+	(0x82000270 | MTK_SIP_SMC_AARCH_BIT)
+#define UFS_MTK_SIP_LEGACY_CRYPTO_RESUME  BIT(2)
+
+/*
  * Quirks
  */
 enum ufs_mtk_host_quirks {

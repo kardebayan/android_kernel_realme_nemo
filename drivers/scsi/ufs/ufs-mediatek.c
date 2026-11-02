@@ -586,10 +586,19 @@ static void ufs_mtk_crypto_enable(struct ufs_hba *hba)
 	struct arm_smccc_res res;
 
 	ufs_mtk_crypto_ctrl(res, 1);
+	if (!res.a0)
+		return;
+
+	/* Older ATF only knows the legacy HW FDE control call */
+	arm_smccc_smc(MTK_SIP_KERNEL_HW_FDE_UFS_CTL_LEGACY,
+		      UFS_MTK_SIP_LEGACY_CRYPTO_RESUME, 0, 0, 0, 0, 0, 0, &res);
 	if (res.a0) {
 		dev_info(hba->dev, "%s: crypto enable failed, err: %lu\n",
 			 __func__, res.a0);
+		return;
 	}
+
+	pr_info_once("ufs-mediatek: crypto enabled via legacy SiP call\n");
 }
 
 static void ufs_mtk_host_reset(struct ufs_hba *hba)
