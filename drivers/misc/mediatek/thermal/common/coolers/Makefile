@@ -167,7 +167,7 @@ obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_VR_FPS.o
 endif
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6853" "mt6873" "mt6785"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6853" "mt6873"))
 ifeq ($(CONFIG_MTK_THERMAL_PA_VIA_ATCMD),y)
     obj-$(CONFIG_THERMAL) += mtk_cooler_mutt_gen97.o
 endif
