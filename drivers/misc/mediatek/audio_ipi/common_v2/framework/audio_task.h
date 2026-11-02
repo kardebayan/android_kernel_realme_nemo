@@ -29,6 +29,7 @@ enum {
 	TASK_SCENE_FAST                 = 15,
 	TASK_SCENE_KTV                  = 16,
 	TASK_SCENE_CAPTURE_RAW          = 17,
+#if !IS_ENABLED(CONFIG_MTK_AUDIODSP_LEGACY_R)
 	TASK_SCENE_FM_ADSP              = 18,
 	TASK_SCENE_PHONE_CALL_SUB       = 19,
 	TASK_SCENE_BLEDL                = 20,
@@ -37,6 +38,7 @@ enum {
 	TASK_SCENE_BLEENC               = 23,
 	TASK_SCENE_BLECALLDL            = 24,
 	TASK_SCENE_BLECALLUL            = 25,
+#endif
 #if !IS_ENABLED(CONFIG_MTK_AUDIODSP_LEGACY)
 	TASK_SCENE_RV_SPK_PROCESS       = 26,
 #endif
@@ -51,7 +53,21 @@ enum {
 	TASK_SCENE_AUDIO_CONTROLLER_RV,
 #endif
 	TASK_SCENE_SIZE,
-	TASK_SCENE_INVALID
+	TASK_SCENE_INVALID,
+#if IS_ENABLED(CONFIG_MTK_AUDIODSP_LEGACY_R)
+	/*
+	 * Not known to R firmware. Keep them out of the
+	 * [0, TASK_SCENE_SIZE) range so they are never sent to the DSP.
+	 */
+	TASK_SCENE_FM_ADSP,
+	TASK_SCENE_PHONE_CALL_SUB,
+	TASK_SCENE_BLEDL,
+	TASK_SCENE_BLEUL,
+	TASK_SCENE_BLEDEC,
+	TASK_SCENE_BLEENC,
+	TASK_SCENE_BLECALLDL,
+	TASK_SCENE_BLECALLUL,
+#endif
 };
 
 

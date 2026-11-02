@@ -17,3 +17,15 @@ config MTK_AUDIODSP_LEGACY
 	  Enable this option if your device uses older audio firmware/blobs.
 
 	  If unsure, say N.
+
+config MTK_AUDIODSP_LEGACY_R
+	bool "Compat with Android R audio firmware/blobs"
+	default n
+	depends on MTK_AUDIODSP_LEGACY
+	help
+	  Enable this option if your device uses Android R audio DSP
+	  firmware and audio HAL. These predate the FM, sub phone call and
+	  BLE audio task scenes, so the driver controller scenes follow
+	  the capture raw scene directly.
+
+	  If unsure, say N.

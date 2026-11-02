@@ -115,4 +115,15 @@ int mtk_audio_set_adsp_reset_status(int status);
 bool mtk_audio_get_adsp_reset_status(void);
 
 #endif
+/*
+ * Share buffer address argument of an IPI. R firmware takes a 32 bit
+ * address in param2 next to the payload, newer firmware reads the 64 bit
+ * payload only.
+ */
+#if IS_ENABLED(CONFIG_MTK_AUDIODSP_LEGACY_R)
+#define DSP_SHARE_ADDR_PARAMS(addr) sizeof(unsigned int), (unsigned int)(addr)
+#else
+#define DSP_SHARE_ADDR_PARAMS(addr) sizeof(addr), 0
+#endif
+
 #endif
