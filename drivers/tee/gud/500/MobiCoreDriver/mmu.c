@@ -76,6 +76,10 @@ static inline long gup_local(struct mm_struct *mm, uintptr_t start,
 	if (write)
 		gup_flags |= FOLL_WRITE;
 
+	if (current->mm && mm == current->mm)
+		return get_user_pages(start, nr_pages,
+				      gup_flags | FOLL_LONGTERM, pages, NULL);
+
 	return get_user_pages_remote(NULL, mm, start, nr_pages, gup_flags,
 			pages, NULL, NULL);
 }
