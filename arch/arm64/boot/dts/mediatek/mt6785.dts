@@ -2893,7 +2893,7 @@ page_owner=on loop.max_part=7";
 			 <&u3port0 PHY_TYPE_USB3>;
 		clocks = <&infracfg_ao INFRACFG_AO_USB_CG>,
 			   <&infracfg_ao INFRACFG_AO_SSUSB_XHCI_CG>;
-		clock-names = "sys_ck", "ref_clk";
+		clock-names = "sys_ck", "ref_ck";
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
