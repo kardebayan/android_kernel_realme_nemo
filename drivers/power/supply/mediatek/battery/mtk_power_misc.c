@@ -138,6 +138,8 @@ int disable_shutdown_cond(int shutdown_cond)
 	return 0;
 }
 
+extern int oplus_is_vooc_project(void);
+
 int set_shutdown_cond(int shutdown_cond)
 {
 	int now_current;
@@ -166,6 +168,11 @@ int set_shutdown_cond(int shutdown_cond)
 		shutdown_cond, enable_lbat_shutdown,
 		now_is_kpoc, now_current, now_is_charging,
 		shutdown_cond_flag, vbat);
+
+	if (oplus_is_vooc_project() == 1) {
+		pr_err("%s: vooc_project, return directly\n", __func__);
+		return 0;
+	}
 
 	if (shutdown_cond_flag == 1)
 		return 0;
@@ -553,9 +560,6 @@ void mtk_power_misc_init(struct platform_device *pdev)
 	init_waitqueue_head(&sdc.wait_que);
 
 	kthread_run(power_misc_routine_thread, &sdc, "power_misc_thread");
-
-	sdc.psy_nb.notifier_call = mtk_power_misc_psy_event;
-	power_supply_reg_notifier(&sdc.psy_nb);
 	b_power_misc_init = true;
 	bm_err("%s INIT done, init:%d\n", __func__, b_power_misc_init);
 }
